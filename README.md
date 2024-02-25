@@ -1,9 +1,9 @@
 # Chess
 TODO:
-- Research different implementations made by other people
+- <s>Research different implementations made by other people</s>
 - Ensure all rules are read upon to implement game
-- Implement chess board and pieces (create board)
-- try to make sure the player can move the pieces first
+- <s>Implement chess board and pieces (create board)</s>
+- <s>try to make sure the player can move the pieces first</s>
 - make sure moves are valid and ensure player is only doing valid moves
 - Allow for player vs player functionality
 - Add AI for player vs computer (stockfish implementation vs own implementation?)

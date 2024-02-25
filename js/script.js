@@ -80,3 +80,37 @@ function createBoard() {
   }
 }
 createBoard();
+
+let selectedPiece;
+
+function makeMove(piece, destination) {
+  destination.innerHTML = piece.innerHTML;
+  piece.innerHTML = '';
+}
+
+const allSquares = document.querySelectorAll("div.square");
+
+allSquares.forEach(square => {
+  square.addEventListener("click", function (e) {
+    let destination = e.target;
+    if(!selectedPiece){
+      selectedPiece = e.target;
+      if(selectedPiece.innerHTML == ''){
+        selectedPiece = '';
+        return;
+      }
+      selectedPiece.style.backgroundColor='blue';
+    }
+    else{
+      selectedPiece.style.backgroundColor='';
+      console.log(selectedPiece.innerHTML);
+      makeMove(selectedPiece, destination);
+      selectedPiece = '';
+      // if(moves.includes(parseInt(id))) {
+      //   makeMove(selectedPiece, id);
+      //   updateMoves();
+      //   checkCheckmate();
+      // }
+    }
+  });
+});
