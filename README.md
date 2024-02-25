@@ -7,7 +7,7 @@ TODO:
 - make sure moves are valid and ensure player is only doing valid moves
 - Allow for player vs player functionality
 - Add AI for player vs computer (stockfish implementation vs own implementation?)
-- Allow for game history
+- Allow for game history (FEN code might help me here)
 
 Notes from reading others projects:\
 CARTER SEMRAD [website](http://cleverlynamedwebsite.pw/codeperweek/fairy-chess/)

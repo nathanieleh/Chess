@@ -1,4 +1,35 @@
+body {
+  background-color: gray;
+}
 #button {
   border-radius: 1rem;
   background-color: lightblue;
+}
+#chessBoard {
+  width: 400px;
+  height: 400px;
+  display: flex;
+  flex-wrap: wrap;
+  z-index: -1;
+}
+.square {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  z-index: 0;
+}
+
+.white {
+  background-color: rgb(231, 231, 231);
+}
+
+.lightgreen {
+  background-color: rgb(106, 189, 106);
+}
+
+svg {
+  width: 40px;
+  height: 40px;
+  margin: 5px;
 }
