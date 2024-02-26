@@ -1,13 +1,15 @@
 # Chess
 TODO:
 - <s>Research different implementations made by other people</s>
-- Ensure all rules are read upon to implement game
 - <s>Implement chess board and pieces (create board)</s>
 - <s>try to make sure the player can move the pieces first</s>
-- make sure moves are valid and ensure player is only doing valid moves
-- Allow for player vs player functionality
+- <s>make sure moves are valid and ensure player is only doing valid moves</s>
+  - <s>rook</s>, <s>bishop</s>, <s>queen</s>, <s>knight</s>, <s>king</s> (<s>castling</s>), <s>pawn</s> (<s>en passant</s>, <s>promotion</s>)
+- <s>Allow for player vs player functionality</s>
+- check for checks and check mates
 - Add AI for player vs computer (stockfish implementation vs own implementation?)
 - Allow for game history (FEN code might help me here)
+- Allow for players to play starting from randomized board positions using a randomized FEN code
 
 Notes from reading others projects:\
 CARTER SEMRAD [website](http://cleverlynamedwebsite.pw/codeperweek/fairy-chess/)
