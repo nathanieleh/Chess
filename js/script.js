@@ -100,7 +100,6 @@ function makeMove(piece, destination) {
   const to = parseInt(destination.getAttribute("square-id"));
   let placementHandled = false;
   allPawns = document.querySelectorAll('.square #p, .square #P');
-  allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
   // handles enpassant for pawns and queen promotion
   if(pieceType == 'p'){
     if(Math.abs(from - to) == 16)
@@ -110,14 +109,14 @@ function makeMove(piece, destination) {
         const enPassantPiece = document.querySelector(`[square-id="${to + 8}"]`);
         if(enPassantPiece && enPassantPiece.firstChild &&
           enPassantPiece.firstChild.getAttribute("id").toLowerCase() == "p"
-          && enPassantPiece.firstChild.getAttribute("enpassant") == true)
+          && enPassantPiece.firstChild.getAttribute("enpassant") == 'true')
             enPassantPiece.innerHTML = '';
       }
       else {
         const enPassantPiece = document.querySelector(`[square-id="${to - 8}"]`);
         if(enPassantPiece && enPassantPiece.firstChild &&
           enPassantPiece.firstChild.getAttribute("id").toLowerCase() == "p"
-          && enPassantPiece.firstChild.getAttribute("enpassant") == true)
+          && enPassantPiece.firstChild.getAttribute("enpassant") == 'true')
             enPassantPiece.innerHTML = '';
       }
     }
@@ -150,6 +149,7 @@ function makeMove(piece, destination) {
   if(!placementHandled)
     destination.innerHTML = piece.innerHTML;
   piece.innerHTML = '';
+  allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
 }
 
 const allSquares = document.querySelectorAll("div.square");
@@ -429,7 +429,7 @@ function pawnMoves(id, color){
         col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id - 1].firstChild.getAttribute("color") != color){
-        moves.push(allSquares[newId]);
+          moves.push(allSquares[newId]);
       }
       break;
     case "black":
@@ -453,17 +453,17 @@ function pawnMoves(id, color){
       // checks if there is a piece on its diagonals or en passant
       newId = id + 7;
       if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
-      col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
-      allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
-      allSquares[id - 1].firstChild.getAttribute("color") != color){
-        moves.push(allSquares[newId]);
+        col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
+        allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
+        allSquares[id - 1].firstChild.getAttribute("color") != color){
+          moves.push(allSquares[newId]);
       }
       newId = id + 9;
       if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
-      col - 1 >= 0 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
-      allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
-      allSquares[id + 1].firstChild.getAttribute("color") != color){
-        moves.push(allSquares[newId]);
+        col - 1 >= 0 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
+        allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
+        allSquares[id + 1].firstChild.getAttribute("color") != color){
+          moves.push(allSquares[newId]);
       }
       break;
   }
