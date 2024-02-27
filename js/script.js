@@ -79,35 +79,59 @@ function rookMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
+  let line = [];
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset;
     if(col + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
+  line = [];
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset;
     if(col + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
+  line = [];
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset*8;
     if(row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
+  line = [];
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset*8;
     if(row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
@@ -117,35 +141,59 @@ function bishopMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
+  let line = [];
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset * 9;
     if(col + offset >= 0 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
+  line = [];
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset * 9;
     if(col + offset <= 7 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
+  line = [];
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset * 7;
     if(col - offset <= 7 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
+  line = [];
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset * 7;
     if(col - offset >= 0 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
+      line.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        line.forEach(element => checks.push(element));
+        checks.push(allSquares[id]);
+      }
       if(allSquares[newId].firstChild) break;
     }
   }
@@ -161,6 +209,10 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
+      }
     }
   }
   newId = id - 10;
@@ -169,6 +221,10 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
+      }
     }
   }
   newId = id - 15;
@@ -177,6 +233,10 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
+      }
     }
   }
   newId = id - 17;
@@ -185,6 +245,10 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
+      }
     }
   }
   newId = id + 6;
@@ -193,6 +257,10 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
+      }
     }
   }
   newId = id + 10;
@@ -201,6 +269,10 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
+      }
     }
   }
   newId = id + 15;
@@ -209,6 +281,10 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
+      }
     }
   }
   newId = id + 17;
@@ -217,6 +293,9 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
     }
     else {
       moves.push(allSquares[newId]);
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+        checks.push(allSquares[newId]);
+      }
     }
   }
 }
@@ -230,7 +309,10 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   newId = id + 1;
@@ -238,7 +320,10 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   newId = id - 8;
@@ -246,7 +331,10 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   newId = id + 8;
@@ -254,7 +342,10 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   newId = id + 9;
@@ -262,7 +353,10 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   newId = id + 7;
@@ -270,7 +364,10 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   newId = id - 7;
@@ -278,7 +375,10 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   newId = id - 9;
@@ -286,11 +386,14 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      moves.push(allSquares[newId]);
+      if(allSquares[newId].style.backgroundColor != 'orange')
+        moves.push(allSquares[newId]);
+      else if(allSquares[newId].firstChild)
+        moves.push(allSquares[newId]);
     }
   }
   // checks if castling is possible
-  if(allSquares[id].firstChild.getAttribute("castle") == 'true'){
+  if(allSquares[id].firstChild?.getAttribute("castle") == 'true'){
     for(let i = 1; i < 4; i++){
       newId = id + i;
       if(i == 3 && allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'r' &&
@@ -343,6 +446,10 @@ function pawnMoves(id, color){
         allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id + 1].firstChild.getAttribute("color") != color){
           moves.push(allSquares[newId]);
+          if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+            checks.push(allSquares[newId]);
+            checks.push(allSquares[id]);
+          }
       }
       newId = id - 9;
       if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
@@ -350,6 +457,10 @@ function pawnMoves(id, color){
         allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id - 1].firstChild.getAttribute("color") != color){
           moves.push(allSquares[newId]);
+          if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+            checks.push(allSquares[newId]);
+            checks.push(allSquares[id]);
+          }
       }
       break;
     case "black":
@@ -377,6 +488,10 @@ function pawnMoves(id, color){
         allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id - 1].firstChild.getAttribute("color") != color){
           moves.push(allSquares[newId]);
+          if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+            checks.push(allSquares[newId]);
+            checks.push(allSquares[id]);
+          }
       }
       newId = id + 9;
       if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
@@ -384,6 +499,10 @@ function pawnMoves(id, color){
         allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id + 1].firstChild.getAttribute("color") != color){
           moves.push(allSquares[newId]);
+          if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+            checks.push(allSquares[newId]);
+            checks.push(allSquares[id]);
+          }
       }
       break;
   }
@@ -436,29 +555,39 @@ function switchTurns() {
 
 let checks = [];
 
-function calculateChecks() {
+function calculateChecks(selectedPiece) {
   allPieces = document.querySelectorAll(".piece");
   checks = [];
   allPieces.forEach(piece => {
     calculateMoves(piece.parentNode);
-    for(let i = 0; i < moves.length; i++) {
-      if(moves[i].firstChild && (moves[i].firstChild == document.querySelector("#k") ||
-        moves[i].firstChild == document.querySelector("#K"))){
-          checks.push(moves[i]);
-          break;
-        }
-    }
     moves = [];
   });
   checks.forEach(check => {
     check.style.backgroundColor = 'orange';
   });
+  if(selectedPiece)
+    calculateMoves(selectedPiece);
+  if(checks.includes(document.querySelector("#k")?.parentNode) && checks.includes(document.querySelector("#K")?.parentNode)) {
+    return "white black";
+  }
+  else if(checks.includes(document.querySelector("#k")?.parentNode)) {
+    return "black";
+  }
+  else if(checks.includes(document.querySelector("#K")?.parentNode)) {
+    return "white";
+  }
+  return '';
 }
 
 // allows for the player to click a piece on the board to receive information or make a move
 allSquares.forEach(square => {
   square.addEventListener("click", function (e) {
     let destination = e.target;
+    let teamInCheck = false;
+    let gameOver = false;
+    // if(checks.length != 0 && teamInCheck){
+    //   moves = moves.filter(move => checks.includes(move));
+    // }
     // no piece has been selected yet, so select this one and show possible moves
     if(!selectedPiece){
       selectedPiece = e.target;
@@ -467,18 +596,32 @@ allSquares.forEach(square => {
         return;
       }
       selectedPiece.style.backgroundColor='deepskyblue';
+      if(calculateChecks(selectedPiece).includes(selectedPiece?.firstChild?.getAttribute("color")))
+        teamInCheck = true;
       calculateMoves(selectedPiece);
+      if(checks.length != 0 && teamInCheck && selectedPiece?.firstChild?.id.toLowerCase() != 'k'){
+        moves = moves.filter(move => checks.includes(move));
+      }
       colorMoves();
-      console.log("moves", moves);
+      console.log('teamincheck', teamInCheck);
+      console.log('moves', moves);
     }
     // there is already a selected piece, so check if the move the player makes is valid
     else{
-      selectedPiece.style.backgroundColor='';
+      selectedPiece.style.backgroundColor = '';
       if(moves.includes(destination)){
         const color = selectedPiece.firstChild.getAttribute("color");
+        if(destination.firstChild?.id.toLowerCase() == 'k'){
+          gameOver = true;
+        }
         if(color == turn.toLowerCase()){
-          switchTurns();
+          if(!gameOver)
+            switchTurns();
           makeMove(selectedPiece, destination);
+          if(gameOver){
+            alert(`${turn} wins!`);
+            createBoard();
+          }
         }
       }
       allSquares.forEach(square => {

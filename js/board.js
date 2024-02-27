@@ -1,7 +1,9 @@
 const chessBoard = document.getElementById('chessBoard');
 const startBoard = [64];
 
+
 const startFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+const testFEN = '8/8/1K6/8/5k2/8/8/8 w KQkq - 0 1';
 
 // interprets the given FENCode to populate the startBoard array with the correct pieces
 function loadFEN(FENCode) {
@@ -34,7 +36,9 @@ function loadFEN(FENCode) {
 
 // creates a chess board for the start of the game
 function createBoard() {
+  chessBoard.innerHTML = '';
   loadFEN(startFEN);
+  // loadFEN(testFEN);
   for(let i = 0; i < 64; i++) {
     const square = document.createElement('div');
     square.classList.add('square');
