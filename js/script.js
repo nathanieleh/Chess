@@ -12,7 +12,7 @@ let turn = 'White';
 let selectedPiece;
 let allPawns = document.querySelectorAll('.square #p, .square #P');
 let allPieces = document.querySelectorAll(".piece");
-const allSquares = document.querySelectorAll("div.square");
+let allSquares = document.querySelectorAll("div.square");
 let moves = [];
 
 // assuming the move is legal, it correctly moves the given piece on the board
@@ -603,8 +603,6 @@ allSquares.forEach(square => {
         moves = moves.filter(move => checks.includes(move));
       }
       colorMoves();
-      console.log('teamincheck', teamInCheck);
-      console.log('moves', moves);
     }
     // there is already a selected piece, so check if the move the player makes is valid
     else{
@@ -620,7 +618,7 @@ allSquares.forEach(square => {
           makeMove(selectedPiece, destination);
           if(gameOver){
             alert(`${turn} wins!`);
-            createBoard();
+            location.reload();
           }
         }
       }
