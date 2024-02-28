@@ -3,7 +3,8 @@ const startBoard = [64];
 
 
 const startFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const testFEN = '8/8/1K6/8/5k2/8/8/8 w KQkq - 0 1';
+const testFEN = '4k3/8/1q6/8/8/8/8/R3K2R w KQkq - 0 1';
+let currFEN = '';
 
 // interprets the given FENCode to populate the startBoard array with the correct pieces
 function loadFEN(FENCode) {
@@ -34,11 +35,42 @@ function loadFEN(FENCode) {
   }
 }
 
+function updateFEN(){
+  currFEN = '';
+  let emptySquares = 0;
+  let allSquares = document.querySelectorAll("div.square");
+  allSquares.forEach(square => {
+    let piece = '';
+    if(square.firstChild){
+      piece = square.firstChild.id;
+    }
+    if(parseInt(square.getAttribute("square-id")) != 0 && parseInt(square.getAttribute("square-id")) % 8 == 0){
+      if(emptySquares > 0){
+        currFEN += emptySquares.toString();
+      }
+      currFEN += "/";
+      emptySquares = 0;
+    }
+    if(piece && emptySquares > 0){
+      currFEN += emptySquares.toString();
+      currFEN += piece;
+      emptySquares = 0;
+    }
+    else if(piece){
+      currFEN += piece;
+    }
+    else{
+      emptySquares++;
+    }
+  });
+  return currFEN;
+}
+
 // creates a chess board for the start of the game
-function createBoard() {
+function createBoard(FENCode) {
   chessBoard.innerHTML = '';
-  loadFEN(startFEN);
-  // loadFEN(testFEN);
+  //loadFEN(FENCode);
+  loadFEN(testFEN);
   for(let i = 0; i < 64; i++) {
     const square = document.createElement('div');
     square.classList.add('square');

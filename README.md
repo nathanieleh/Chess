@@ -29,7 +29,7 @@ document.body.appendChild(c);
 TECHY WEB DEV [video](https://www.youtube.com/watch?v=wYRRVRrK0R8)
 - represented the board with 64 li elements with each row being represented by a div, each box is given a unique id
 - colored using css classes
-- utilized the innertext of each div in order to place the pieces in the correct spots
+- utilized the inner text of each div in order to place the pieces in the correct spots
 - example of reading an id from the project: `b${a + i * 100}` used to parse text from a number
 - used a toggle to keep track of which player was making the move
 - did not create classes, checked innerHTML to see how to treat the piece being moved

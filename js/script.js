@@ -1,4 +1,4 @@
-createBoard();
+createBoard(startFEN);
 
 const button = document.getElementById('button');
 button.addEventListener("click", function () {
@@ -12,8 +12,11 @@ let turn = 'White';
 let selectedPiece;
 let allPawns = document.querySelectorAll('.square #p, .square #P');
 let allPieces = document.querySelectorAll(".piece");
+let allBlack = document.querySelectorAll("div[color='black']");
+let allWhite = document.querySelectorAll("div[color='white']");
 let allSquares = document.querySelectorAll("div.square");
 let moves = [];
+let gameStates = [];
 
 // assuming the move is legal, it correctly moves the given piece on the board
 function makeMove(piece, destination) {
@@ -393,7 +396,20 @@ function kingMoves(id, color){
     }
   }
   // checks if castling is possible
-  if(allSquares[id].firstChild?.getAttribute("castle") == 'true'){
+  if(allSquares[id].firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
+    let movesOnSquare = [];
+    if(color == 'white')
+      allBlack.forEach(piece => {
+        if(piece.id != 'k')
+          movesOnSquare.push(calculateMoves(piece).forEach(move => move));
+      });
+    else
+      allWhite.forEach(piece => {
+        if(piece.id != 'K')
+          movesOnSquare.push(calculateMoves(piece).forEach(move => move));
+      });
+    movesOnSquare = movesOnSquare.filter(move => move == allSquares[id + 1] || move == allSquares[id - 1]);
+    console.log(movesOnSquare);
     for(let i = 1; i < 4; i++){
       newId = id + i;
       if(i == 3 && allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'r' &&
@@ -535,6 +551,7 @@ function calculateMoves(selectedPiece) {
       pawnMoves(id, color);
       break;
   }
+  return moves;
 }
 
 // signify to the player all possible moves by coloring squares red
@@ -556,6 +573,9 @@ function switchTurns() {
 let checks = [];
 
 function calculateChecks(selectedPiece) {
+  checks.forEach(check => {
+    check.style.backgroundColor = '';
+  });
   allPieces = document.querySelectorAll(".piece");
   checks = [];
   allPieces.forEach(piece => {
@@ -579,55 +599,87 @@ function calculateChecks(selectedPiece) {
   return '';
 }
 
+function revertMove() {
+  gameStates.pop();
+  createBoard(gameStates[gameStates.length - 1]);
+  switchTurns();
+  listenOnSquares();
+  alert("You might not want to do that...");
+}
+
+function animateInvalidMove(color) {
+  switch (color){
+    case 'white':
+      document.getElementById("K").parentNode.style.backgroundColor="red";
+      break;
+    case 'black':
+      document.getElementById("k").parentNode.style.backgroundColor="red";
+  }
+}
+
 // allows for the player to click a piece on the board to receive information or make a move
-allSquares.forEach(square => {
-  square.addEventListener("click", function (e) {
-    let destination = e.target;
-    let teamInCheck = false;
-    let gameOver = false;
-    // if(checks.length != 0 && teamInCheck){
-    //   moves = moves.filter(move => checks.includes(move));
-    // }
-    // no piece has been selected yet, so select this one and show possible moves
-    if(!selectedPiece){
-      selectedPiece = e.target;
-      if(selectedPiece.innerHTML == ''){
-        selectedPiece = '';
-        return;
-      }
-      selectedPiece.style.backgroundColor='deepskyblue';
-      if(calculateChecks(selectedPiece).includes(selectedPiece?.firstChild?.getAttribute("color")))
-        teamInCheck = true;
-      calculateMoves(selectedPiece);
-      if(checks.length != 0 && teamInCheck && selectedPiece?.firstChild?.id.toLowerCase() != 'k'){
-        moves = moves.filter(move => checks.includes(move));
-      }
-      colorMoves();
-    }
-    // there is already a selected piece, so check if the move the player makes is valid
-    else{
-      selectedPiece.style.backgroundColor = '';
-      if(moves.includes(destination)){
-        const color = selectedPiece.firstChild.getAttribute("color");
-        if(destination.firstChild?.id.toLowerCase() == 'k'){
-          gameOver = true;
+function listenOnSquares() {
+  allSquares = document.querySelectorAll("div.square");
+  allSquares.forEach(square => {
+    square.addEventListener("click", function (e) {
+      let destination = e.target;
+      let teamInCheck = false;
+      let gameOver = false;
+      // if(checks.length != 0 && teamInCheck){
+      //   moves = moves.filter(move => checks.includes(move));
+      // }
+      // no piece has been selected yet, so select this one and show possible moves
+      if(!selectedPiece){
+        console.log('selected');
+        selectedPiece = e.target;
+        if(selectedPiece.innerHTML == ''){
+          selectedPiece = '';
+          return;
         }
-        if(color == turn.toLowerCase()){
-          if(!gameOver)
-            switchTurns();
-          makeMove(selectedPiece, destination);
-          if(gameOver){
-            alert(`${turn} wins!`);
-            location.reload();
+        selectedPiece.style.backgroundColor='deepskyblue';
+        if(calculateChecks(selectedPiece).includes(selectedPiece?.firstChild?.getAttribute("color")))
+          teamInCheck = true;
+        calculateMoves(selectedPiece);
+        if(checks.length != 0 && teamInCheck && selectedPiece?.firstChild?.id.toLowerCase() != 'k'){
+          moves = moves.filter(move => checks.includes(move));
+        }
+        colorMoves();
+      }
+      // there is already a selected piece, so check if the move the player makes is valid
+      else{
+        selectedPiece.style.backgroundColor = '';
+        if(moves.includes(destination)){
+          console.log('move');
+          const color = selectedPiece.firstChild.getAttribute("color");
+          if(destination.firstChild?.id.toLowerCase() == 'k'){
+            gameOver = true;
+          }
+          if(color == turn.toLowerCase()){
+            if(!gameOver)
+              switchTurns();
+            makeMove(selectedPiece, destination);
+            gameStates.push(updateFEN());
+            console.log(gameStates);
+            calculateChecks();
+            if(document.getElementById("K").parentNode.style.backgroundColor == 'orange' && color == 'white' ||
+              document.getElementById("k").parentNode.style.backgroundColor == 'orange' && color == 'black'){
+                revertMove();
+                animateInvalidMove(color);
+            }
+            if(gameOver){
+              alert(`${turn} wins!`);
+              location.reload();
+            }
           }
         }
+        allSquares.forEach(square => {
+          square.style.backgroundColor = '';
+        });
+        moves = [];
+        selectedPiece = '';
+        calculateChecks();
       }
-      allSquares.forEach(square => {
-        square.style.backgroundColor = '';
-      });
-      moves = [];
-      selectedPiece = '';
-      calculateChecks();
-    }
+    });
   });
-});
+}
+listenOnSquares();
