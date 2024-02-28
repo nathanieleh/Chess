@@ -1,4 +1,6 @@
-createBoard(startFEN);
+let FENCode = startFEN;
+let gameStates = [FENCode];
+createBoard(FENCode);
 
 const button = document.getElementById('button');
 button.addEventListener("click", function () {
@@ -16,7 +18,7 @@ let allBlack = document.querySelectorAll("div[color='black']");
 let allWhite = document.querySelectorAll("div[color='white']");
 let allSquares = document.querySelectorAll("div.square");
 let moves = [];
-let gameStates = [];
+let checks = [];
 
 // assuming the move is legal, it correctly moves the given piece on the board
 function makeMove(piece, destination) {
@@ -304,6 +306,8 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
 }
 
 function kingMoves(id, color){
+  //! Fix king receiving extra moves from first piece in piece list
+  moves = [];
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -312,10 +316,20 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   newId = id + 1;
@@ -323,10 +337,20 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   newId = id - 8;
@@ -334,10 +358,20 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   newId = id + 8;
@@ -345,10 +379,20 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   newId = id + 9;
@@ -356,10 +400,20 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   newId = id + 7;
@@ -367,10 +421,20 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   newId = id - 7;
@@ -378,10 +442,20 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   newId = id - 9;
@@ -389,43 +463,61 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange')
+      if(allSquares[newId].style.backgroundColor != 'orange'){
         moves.push(allSquares[newId]);
-      else if(allSquares[newId].firstChild)
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
+      else if(allSquares[newId].firstChild){
         moves.push(allSquares[newId]);
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
+      }
     }
   }
   // checks if castling is possible
   if(allSquares[id].firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
-    let movesOnSquare = [];
-    if(color == 'white')
-      allBlack.forEach(piece => {
-        if(piece.id != 'k')
-          movesOnSquare.push(calculateMoves(piece).forEach(move => move));
-      });
-    else
-      allWhite.forEach(piece => {
-        if(piece.id != 'K')
-          movesOnSquare.push(calculateMoves(piece).forEach(move => move));
-      });
-    movesOnSquare = movesOnSquare.filter(move => move == allSquares[id + 1] || move == allSquares[id - 1]);
-    console.log(movesOnSquare);
+    let tempMoves = moves;
     for(let i = 1; i < 4; i++){
       newId = id + i;
-      if(i == 3 && allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'r' &&
+      if(i == 3 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
           allSquares[newId].firstChild.getAttribute("castle") == 'true'){
-        moves.push(allSquares[id + 2]);
+        makeMove(allSquares[id], allSquares[id + 1]);
+        calculateChecks();
+        moves = tempMoves;
+        if(allSquares[id + 1].style.backgroundColor != 'orange'){
+          moves.push(allSquares[id + 2]);
+          tempMoves = moves;
+        }
+        makeMove(allSquares[id + 1], allSquares[id]);
+        calculateChecks();
+        moves = tempMoves;
+        allSquares[id].firstChild.setAttribute("castle", 'true');
       }
-      if(allSquares[newId].firstChild)
+      if(allSquares[newId]?.firstChild)
         break;
     }
     for(let i = -1; i > -5; i--){
       newId = id + i;
-      if(i == -4 && allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'r' &&
+      if(i == -4 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
           allSquares[newId].firstChild.getAttribute("castle") == 'true'){
-        moves.push(allSquares[id - 2]);
+        makeMove(allSquares[id], allSquares[id - 1]);
+        calculateChecks();
+        moves = tempMoves;
+        if(allSquares[id - 1].style.backgroundColor != 'orange'){
+          moves.push(allSquares[id - 2]);
+          tempMoves = moves;
+        }
+        makeMove(allSquares[id - 1], allSquares[id]);
+        calculateChecks();
+        moves = tempMoves;
+        allSquares[id].firstChild.setAttribute("castle", 'true');
       }
-      if(allSquares[newId].firstChild)
+      if(allSquares[newId]?.firstChild)
         break;
     }
   }
@@ -526,8 +618,8 @@ function pawnMoves(id, color){
 
 // populates moves array based on the position of the piece and the type it is
 function calculateMoves(selectedPiece) {
-  let pieceType = selectedPiece.firstChild.getAttribute("id").toLowerCase();
-  let color = selectedPiece.firstChild.getAttribute("color");
+  let pieceType = selectedPiece.firstChild?.getAttribute("id").toLowerCase();
+  let color = selectedPiece.firstChild?.getAttribute("color");
   let id = parseInt(selectedPiece.getAttribute("square-id"));
   // based on the piece type, add the proper moves for that piece to moves
   switch (pieceType) {
@@ -570,8 +662,6 @@ function switchTurns() {
   document.getElementById('turn').innerHTML = `${turn}'s Turn`;
 }
 
-let checks = [];
-
 function calculateChecks(selectedPiece) {
   checks.forEach(check => {
     check.style.backgroundColor = '';
@@ -600,20 +690,27 @@ function calculateChecks(selectedPiece) {
 }
 
 function revertMove() {
-  gameStates.pop();
+  console.log(gameStates.pop());
   createBoard(gameStates[gameStates.length - 1]);
   switchTurns();
   listenOnSquares();
-  alert("You might not want to do that...");
 }
 
 function animateInvalidMove(color) {
   switch (color){
     case 'white':
-      document.getElementById("K").parentNode.style.backgroundColor="red";
+      let whiteKing = document.getElementById("K");
+      if(whiteKing.style.backgroundColor == 'red')
+        whiteKing.style.backgroundColor = '';
+      else
+        whiteKing.style.backgroundColor = 'red';
       break;
     case 'black':
-      document.getElementById("k").parentNode.style.backgroundColor="red";
+      let blackKing = document.getElementById("k");
+      if(blackKing.style.backgroundColor == 'red')
+        blackKing.style.backgroundColor = '';
+      else
+        blackKing.style.backgroundColor = 'red';
   }
 }
 
@@ -625,9 +722,6 @@ function listenOnSquares() {
       let destination = e.target;
       let teamInCheck = false;
       let gameOver = false;
-      // if(checks.length != 0 && teamInCheck){
-      //   moves = moves.filter(move => checks.includes(move));
-      // }
       // no piece has been selected yet, so select this one and show possible moves
       if(!selectedPiece){
         console.log('selected');
@@ -639,7 +733,6 @@ function listenOnSquares() {
         selectedPiece.style.backgroundColor='deepskyblue';
         if(calculateChecks(selectedPiece).includes(selectedPiece?.firstChild?.getAttribute("color")))
           teamInCheck = true;
-        calculateMoves(selectedPiece);
         if(checks.length != 0 && teamInCheck && selectedPiece?.firstChild?.id.toLowerCase() != 'k'){
           moves = moves.filter(move => checks.includes(move));
         }
@@ -659,12 +752,16 @@ function listenOnSquares() {
               switchTurns();
             makeMove(selectedPiece, destination);
             gameStates.push(updateFEN());
-            console.log(gameStates);
             calculateChecks();
             if(document.getElementById("K").parentNode.style.backgroundColor == 'orange' && color == 'white' ||
               document.getElementById("k").parentNode.style.backgroundColor == 'orange' && color == 'black'){
                 revertMove();
-                animateInvalidMove(color);
+                let kingWarning = setInterval(function() {
+                  animateInvalidMove(color);
+                }, 150);
+                setTimeout(() => {
+                  clearInterval(kingWarning);
+                }, 600);
             }
             if(gameOver){
               alert(`${turn} wins!`);

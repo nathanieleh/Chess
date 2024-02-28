@@ -3,7 +3,7 @@ const startBoard = [64];
 
 
 const startFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const testFEN = '4k3/8/1q6/8/8/8/8/R3K2R w KQkq - 0 1';
+const testFEN = '4k2r/8/2q5/8/8/8/8/R3K2R w KQkq - 0 1';
 let currFEN = '';
 
 // interprets the given FENCode to populate the startBoard array with the correct pieces
@@ -63,14 +63,15 @@ function updateFEN(){
       emptySquares++;
     }
   });
+  if(emptySquares > 0)
+    currFEN += emptySquares.toString();
   return currFEN;
 }
 
 // creates a chess board for the start of the game
 function createBoard(FENCode) {
   chessBoard.innerHTML = '';
-  //loadFEN(FENCode);
-  loadFEN(testFEN);
+  loadFEN(FENCode);
   for(let i = 0; i < 64; i++) {
     const square = document.createElement('div');
     square.classList.add('square');
