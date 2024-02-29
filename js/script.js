@@ -742,8 +742,10 @@ function checkForCheckMate(){
       }
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
+    console.log("possible moves after check", possibleMoves);
     // check if king can move now
     let kingCanMove = false;
+    let castling = document.getElementById("k").castle;
     if(possibleMoves.length == 0){
       let tempChecks = checks;
       console.log("check if king can move");
@@ -757,14 +759,16 @@ function checkForCheckMate(){
         makeMove(document.getElementById('k').parentNode, move);
         calculateChecks();
         makeMove(move, originalKingSquare);
+        document.getElementById('k').setAttribute("castle", castling);
         if(nearbyPiece)
           move.innerHTML = nearbyPiece;
         if(!checks.includes(move)){
-          console.log("king can move");
+          console.log("king can move", move);
           kingCanMove = true;
           return;
         }
       });
+      console.log("king moves", kingMoves);
       if(kingCanMove == true){
         checks = tempChecks;
         console.log("No checkmate", checks);
@@ -777,13 +781,14 @@ function checkForCheckMate(){
   }
   if(turn.toLowerCase() == 'black'){
     king = document.getElementById("K");
-    allBlack.forEach(piece => {
+    allWhite.forEach(piece => {
       if(piece.id != 'K'){
         let checkMoves = calculateMoves(piece.parentNode);
         checkMoves.forEach(move => possibleMoves.push(move));
       }
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
+    console.log("possible moves after check", possibleMoves);
     // check if king can move now
     let kingCanMove = false;
     if(possibleMoves.length == 0){
@@ -802,11 +807,12 @@ function checkForCheckMate(){
         if(nearbyPiece)
           move.innerHTML = nearbyPiece;
         if(!checks.includes(move)){
-          console.log("king can move");
+          console.log("king can move", move);
           kingCanMove = true;
           return;
         }
       });
+      console.log("king moves", kingMoves);
       if(kingCanMove == true){
         checks = tempChecks;
         console.log("No checkmate", checks);
