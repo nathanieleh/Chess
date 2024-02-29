@@ -20,16 +20,16 @@ let allSquares = document.querySelectorAll("div.square");
 let gameOver = false;
 let moves = [];
 let checks = [];
-let capture = new Audio('../audio/capture.mp3');
-let castle = new Audio('../audio/castle.mp3');
-let checkmate = new Audio('../audio/game-end.webm');
-let gameStart = new Audio('../audio/game-start.mp3');
-let illegalMove = new Audio('../audio/illegal.mp3');
-let check = new Audio('../audio/move-check.mp3');
-let oppMove = new Audio('../audio/move-opponent.mp3');
-let selfMove = new Audio('../audio/move-self.mp3');
-let promote = new Audio('../audio/promote.mp3');
-let scatter = new Audio('../audio/scatter.mp3');
+let capture = new Audio('./audio/capture.mp3');
+let castle = new Audio('./audio/castle.mp3');
+let checkmate = new Audio('./audio/game-end.webm');
+let gameStart = new Audio('./audio/game-start.mp3');
+let illegalMove = new Audio('./audio/illegal.mp3');
+let check = new Audio('./audio/move-check.mp3');
+let oppMove = new Audio('./audio/move-opponent.mp3');
+let selfMove = new Audio('./audio/move-self.mp3');
+let promote = new Audio('./audio/promote.mp3');
+let scatter = new Audio('./audio/scatter.mp3');
 
 //! gameStart.play();
 
