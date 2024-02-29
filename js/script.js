@@ -1,4 +1,4 @@
-let FENCode = startFEN;
+let FENCode = testFEN;
 let gameStates = [FENCode];
 createBoard(FENCode);
 
@@ -306,8 +306,6 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
 }
 
 function kingMoves(id, color){
-  //! Fix king receiving extra moves from first piece in piece list
-  moves = [];
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -479,9 +477,9 @@ function kingMoves(id, color){
       }
     }
   }
+  let tempMoves = moves;
   // checks if castling is possible
   if(allSquares[id].firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
-    let tempMoves = moves;
     for(let i = 1; i < 4; i++){
       newId = id + i;
       if(i == 3 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
@@ -618,6 +616,9 @@ function pawnMoves(id, color){
 
 // populates moves array based on the position of the piece and the type it is
 function calculateMoves(selectedPiece) {
+  moves = [];
+  if(!selectedPiece)
+    return [];
   let pieceType = selectedPiece.firstChild?.getAttribute("id").toLowerCase();
   let color = selectedPiece.firstChild?.getAttribute("color");
   let id = parseInt(selectedPiece.getAttribute("square-id"));
@@ -690,7 +691,8 @@ function calculateChecks(selectedPiece) {
 }
 
 function revertMove() {
-  console.log(gameStates.pop());
+  console.log("revertMove");
+  gameStates.pop();
   createBoard(gameStates[gameStates.length - 1]);
   switchTurns();
   listenOnSquares();
