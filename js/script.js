@@ -1,4 +1,4 @@
-let FENCode = testFEN;
+let FENCode = startFEN;
 let gameStates = [FENCode];
 createBoard(FENCode);
 
