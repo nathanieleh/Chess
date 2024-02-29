@@ -17,8 +17,21 @@ let allPieces = document.querySelectorAll(".piece");
 let allBlack = document.querySelectorAll("div[color='black']");
 let allWhite = document.querySelectorAll("div[color='white']");
 let allSquares = document.querySelectorAll("div.square");
+let gameOver = false;
 let moves = [];
 let checks = [];
+let capture = new Audio('../audio/capture.mp3');
+let castle = new Audio('../audio/castle.mp3');
+let checkmate = new Audio('../audio/game-end.webm');
+let gameStart = new Audio('../audio/game-start.mp3');
+let illegalMove = new Audio('../audio/illegal.mp3');
+let check = new Audio('../audio/move-check.mp3');
+let oppMove = new Audio('../audio/move-opponent.mp3');
+let selfMove = new Audio('../audio/move-self.mp3');
+let promote = new Audio('../audio/promote.mp3');
+let scatter = new Audio('../audio/scatter.mp3');
+
+//! gameStart.play();
 
 // assuming the move is legal, it correctly moves the given piece on the board
 function makeMove(piece, destination) {
@@ -479,7 +492,7 @@ function kingMoves(id, color){
   }
   let tempMoves = moves;
   // checks if castling is possible
-  if(allSquares[id].firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
+  if(allSquares[id]?.firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
     for(let i = 1; i < 4; i++){
       newId = id + i;
       if(i == 3 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
@@ -547,7 +560,7 @@ function pawnMoves(id, color){
       }
       // checks if there is a piece on its diagonals or en passant
       newId = id - 7;
-      if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
+      if(col + 1 <= 7 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
         col + 1 <= 7 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id + 1].firstChild.getAttribute("color") != color){
@@ -558,7 +571,7 @@ function pawnMoves(id, color){
           }
       }
       newId = id - 9;
-      if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
+      if(col - 1 >= 0 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
         col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id - 1].firstChild.getAttribute("color") != color){
@@ -589,7 +602,7 @@ function pawnMoves(id, color){
       }
       // checks if there is a piece on its diagonals or en passant
       newId = id + 7;
-      if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
+      if(col - 1 >= 0 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
         col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id - 1].firstChild.getAttribute("color") != color){
@@ -600,8 +613,8 @@ function pawnMoves(id, color){
           }
       }
       newId = id + 9;
-      if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
-        col - 1 >= 0 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
+      if(col + 1 <= 7 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color ||
+        col + 1 <= 7 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id + 1].firstChild.getAttribute("color") != color){
           moves.push(allSquares[newId]);
@@ -716,6 +729,97 @@ function animateInvalidMove(color) {
   }
 }
 
+function checkForCheckMate(){
+  let possibleMoves = [];
+  let king;
+  console.log("checking for mate");
+  if(turn.toLowerCase() == 'white'){
+    king = document.getElementById("k");
+    allBlack.forEach(piece => {
+      if(piece.id != 'k'){
+        let checkMoves = calculateMoves(piece.parentNode);
+        checkMoves.forEach(move => possibleMoves.push(move));
+      }
+    });
+    possibleMoves = possibleMoves.filter(move => checks.includes(move));
+    // check if king can move now
+    let kingCanMove = false;
+    if(possibleMoves.length == 0){
+      let tempChecks = checks;
+      console.log("check if king can move");
+      let kingMoves = calculateMoves(king.parentNode);
+      kingMoves.forEach(move => {
+        let originalKingSquare = document.getElementById("k").parentNode;
+        let nearbyPiece = '';
+        if(move.innerHTML != ''){
+          nearbyPiece = move.innerHTML;
+        }
+        makeMove(document.getElementById('k').parentNode, move);
+        calculateChecks();
+        makeMove(move, originalKingSquare);
+        if(nearbyPiece)
+          move.innerHTML = nearbyPiece;
+        if(!checks.includes(move)){
+          console.log("king can move");
+          kingCanMove = true;
+          return;
+        }
+      });
+      if(kingCanMove == true){
+        checks = tempChecks;
+        console.log("No checkmate", checks);
+        return false;
+      }
+      checks = tempChecks;
+      console.log("checkmate", checks);
+      return true;
+    }
+  }
+  if(turn.toLowerCase() == 'black'){
+    king = document.getElementById("K");
+    allBlack.forEach(piece => {
+      if(piece.id != 'K'){
+        let checkMoves = calculateMoves(piece.parentNode);
+        checkMoves.forEach(move => possibleMoves.push(move));
+      }
+    });
+    possibleMoves = possibleMoves.filter(move => checks.includes(move));
+    // check if king can move now
+    let kingCanMove = false;
+    if(possibleMoves.length == 0){
+      let tempChecks = checks;
+      console.log("check if king can move");
+      let kingMoves = calculateMoves(king.parentNode);
+      kingMoves.forEach(move => {
+        let originalKingSquare = document.getElementById("K").parentNode;
+        let nearbyPiece = '';
+        if(move.innerHTML != ''){
+          nearbyPiece = move.innerHTML;
+        }
+        makeMove(document.getElementById('K').parentNode, move);
+        calculateChecks();
+        makeMove(move, originalKingSquare);
+        if(nearbyPiece)
+          move.innerHTML = nearbyPiece;
+        if(!checks.includes(move)){
+          console.log("king can move");
+          kingCanMove = true;
+          return;
+        }
+      });
+      if(kingCanMove == true){
+        checks = tempChecks;
+        console.log("No checkmate", checks);
+        return false;
+      }
+      checks = tempChecks;
+      console.log("checkmate", checks);
+      return true;
+    }
+  }
+  return false;
+}
+
 // allows for the player to click a piece on the board to receive information or make a move
 function listenOnSquares() {
   allSquares = document.querySelectorAll("div.square");
@@ -723,9 +827,9 @@ function listenOnSquares() {
     square.addEventListener("click", function (e) {
       let destination = e.target;
       let teamInCheck = false;
-      let gameOver = false;
+      let pieces = allPieces.length;
       // no piece has been selected yet, so select this one and show possible moves
-      if(!selectedPiece){
+      if(!selectedPiece && !gameOver){
         console.log('selected');
         selectedPiece = e.target;
         if(selectedPiece.innerHTML == ''){
@@ -741,23 +845,19 @@ function listenOnSquares() {
         colorMoves();
       }
       // there is already a selected piece, so check if the move the player makes is valid
-      else{
+      else if(!gameOver){
         selectedPiece.style.backgroundColor = '';
         if(moves.includes(destination)){
           console.log('move');
           const color = selectedPiece.firstChild.getAttribute("color");
-          if(destination.firstChild?.id.toLowerCase() == 'k'){
-            gameOver = true;
-          }
           if(color == turn.toLowerCase()){
-            if(!gameOver)
-              switchTurns();
             makeMove(selectedPiece, destination);
             gameStates.push(updateFEN());
             calculateChecks();
             if(document.getElementById("K").parentNode.style.backgroundColor == 'orange' && color == 'white' ||
               document.getElementById("k").parentNode.style.backgroundColor == 'orange' && color == 'black'){
                 revertMove();
+                illegalMove.play();
                 let kingWarning = setInterval(function() {
                   animateInvalidMove(color);
                 }, 150);
@@ -765,9 +865,18 @@ function listenOnSquares() {
                   clearInterval(kingWarning);
                 }, 600);
             }
-            if(gameOver){
-              alert(`${turn} wins!`);
-              location.reload();
+            else if(checks.length > 0 && (gameOver = checkForCheckMate())){
+              checkmate.play();
+            }
+            else if(checks.length > 0)
+              check.play();
+            else if(pieces != allPieces.length)
+              capture.play();
+            else
+              color == 'white' ? selfMove.play() : oppMove.play();
+            if(!gameOver){
+              switchTurns();
+              document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
             }
           }
         }
@@ -777,6 +886,9 @@ function listenOnSquares() {
         moves = [];
         selectedPiece = '';
         calculateChecks();
+        if(gameOver){
+          setTimeout(function() {alert(`${turn} wins!`)}, 100);
+        }
       }
     });
   });

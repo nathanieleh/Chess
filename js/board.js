@@ -3,7 +3,7 @@ const startBoard = [64];
 
 
 const startFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const testFEN = '4k3/8/2q5/8/8/8/8/R3K2R w KQkq - 0 1';
+const testFEN = 'Q3kp2/4p3/4P3/8/8/8/8/R3K2R w KQkq - 0 1';
 let currFEN = '';
 
 // interprets the given FENCode to populate the startBoard array with the correct pieces

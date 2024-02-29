@@ -7,7 +7,9 @@ TODO:
   - <s>rook</s>, <s>bishop</s>, <s>queen</s>, <s>knight</s>, <s>king</s> (<s>castling</s>), <s>pawn</s> (<s>en passant</s>, <s>promotion</s>)
 - <s>Allow for player vs player functionality</s>
 - <s>check for checks and check mates</s>
-  - <s>prevent king from checkmating himself</s>, <s>prevent castling through check</s>, <s>pinned pieces</s>
+  - <s>prevent king from checkmating himself</s>, <s>prevent castling through check</s>, <s>pinned pieces</s>, have game recognize a checkmate
+- Audio files
+  - <s>capture</s>, castle, <s>game ends</s>, <s>game starts</s>, <s>illegal move</s>, <s>check</s>, <s>moves</s>, promotion
 - Add AI for player vs computer (stockfish implementation vs own implementation?)
 - Allow for game history (FEN code might help me here)
 - Allow for players to play starting from randomized board positions using a randomized FEN code
