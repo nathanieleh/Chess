@@ -10,9 +10,15 @@ TODO:
   - <s>prevent king from checkmating himself</s>, <s>prevent castling through check</s>, <s>pinned pieces</s>, <s>have game recognize a checkmate</s>
 - Audio files
   - <s>capture</s>, castle, <s>game ends</s>, game starts, <s>illegal move</s>, <s>check</s>, <s>moves</s>, promotion
+- Implement full entirety of FENCode so all rules can be considered such as the 50 move rule
 - Add AI for player vs computer (stockfish implementation vs own implementation?)
+  - Stockfish uses the UCI (universal chess interface) for communication
 - Allow for game history (FEN code might help me here)
 - Allow for players to play starting from randomized board positions using a randomized FEN code
+
+BACKEND TODO:
+- packages installed: nodemon, express, dotenv, openai, stockfish
+- make sure to `run npm init -y` before installing these packages
 
 Notes from reading others projects:\
 CARTER SEMRAD [website](http://cleverlynamedwebsite.pw/codeperweek/fairy-chess/)

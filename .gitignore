@@ -1,0 +1,22 @@
+node_modules/
+
+# Ignore .env files containing sensitive information
+.env
+
+# Ignore macOS Finder metadata files
+.DS_Store
+
+# Ignore npm debug logs
+npm-debug.log
+
+# Ignore Visual Studio Code configuration directory
+.vscode/
+
+# Ignore Yarn lock file
+yarn.lock
+
+# Ignore npm lock file
+package-lock.json
+
+# Ignore coverage reports directory
+coverage/
