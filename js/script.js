@@ -313,6 +313,7 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
       moves.push(allSquares[newId]);
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
         checks.push(allSquares[newId]);
+        checks.push(allSquares[id]);
       }
     }
   }
@@ -742,7 +743,8 @@ function checkForCheckMate(){
       }
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
-    console.log("possible moves after check", possibleMoves);
+    console.log("possible moves after check");
+    possibleMoves.forEach(move => console.log(move.getAttribute('square-id')));
     // check if king can move now
     let kingCanMove = false;
     let castling = document.getElementById("k").castle;
@@ -763,7 +765,7 @@ function checkForCheckMate(){
         if(nearbyPiece)
           move.innerHTML = nearbyPiece;
         if(!checks.includes(move)){
-          console.log("king can move", move);
+          console.log("king can move", move.getAttribute("square-id"));
           kingCanMove = true;
           return;
         }
@@ -788,7 +790,8 @@ function checkForCheckMate(){
       }
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
-    console.log("possible moves after check", possibleMoves);
+    console.log("possible moves after check");
+    possibleMoves.forEach(move => console.log(move.getAttribute('square-id')));
     // check if king can move now
     let kingCanMove = false;
     if(possibleMoves.length == 0){
