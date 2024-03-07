@@ -1,10 +1,11 @@
 {
   "name": "chess",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
-  "main": "js/index.js",
+  "main": "js/stockfish.js",
   "scripts": {
-    "start": "nodemon js/index.js",
+    "start": "nodemon js/stockfish.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
