@@ -6,7 +6,11 @@ const startFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 const testFEN = 'Q3kp2/4p3/4P3/8/8/8/8/R3K2R w KQkq - 0 1';
 let currFEN = '';
 
-// interprets the given FENCode to populate the startBoard array with the correct pieces
+/**
+ * Loads the FEN (Forsyth–Edwards Notation) code into the startBoard array.
+ * 
+ * @param {string} FENCode - The FEN code representing the chess position.
+ */
 function loadFEN(FENCode) {
   let row = 0;
   let col = 0;
@@ -35,6 +39,10 @@ function loadFEN(FENCode) {
   }
 }
 
+/**
+ * Updates the FEN (Forsyth–Edwards Notation) string based on the current state of the chessboard.
+ * @returns {string} The updated FEN string.
+ */
 function updateFEN(){
   currFEN = '';
   let emptySquares = 0;
@@ -68,7 +76,10 @@ function updateFEN(){
   return currFEN;
 }
 
-// creates a chess board for the start of the game
+/**
+ * Creates the chessboard based on the given FEN code.
+ * @param {string} FENCode - The FEN code representing the initial state of the chessboard.
+ */
 function createBoard(FENCode) {
   chessBoard.innerHTML = '';
   loadFEN(FENCode);

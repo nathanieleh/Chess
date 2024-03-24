@@ -2,6 +2,7 @@ let FENCode = startFEN;
 let gameStates = [FENCode];
 createBoard(FENCode);
 
+const playerMoved = new CustomEvent("playerMoved");
 const button = document.getElementById('button');
 button.addEventListener("click", function () {
   const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
@@ -33,7 +34,11 @@ let scatter = new Audio('./audio/scatter.mp3');
 
 //! gameStart.play();
 
-// assuming the move is legal, it correctly moves the given piece on the board
+/**
+ * Makes a move on the chessboard.
+ * @param {HTMLElement} piece - The piece being moved.
+ * @param {HTMLElement} destination - The destination square where the piece is being moved to.
+ */
 function makeMove(piece, destination) {
   const pieceType = piece.firstChild.getAttribute("id").toLowerCase();
   const color = piece.firstChild.getAttribute("color");
@@ -93,6 +98,12 @@ function makeMove(piece, destination) {
   allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
 }
 
+/**
+ * Calculates the possible moves for a rook on the chessboard.
+ * 
+ * @param {number} id - The ID of the rook square.
+ * @param {string} color - The color of the rook ('white' or 'black').
+ */
 function rookMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
@@ -155,6 +166,12 @@ function rookMoves(id, color){
   }
 }
 
+/**
+ * Calculates the possible moves for a bishop on the chessboard.
+ * 
+ * @param {number} id - The ID of the bishop square.
+ * @param {string} color - The color of the bishop ('white' or 'black').
+ */
 function bishopMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
@@ -217,6 +234,11 @@ function bishopMoves(id, color){
   }
 }
 
+/**
+ * Calculates the possible moves for a knight on a chessboard.
+ * @param {number} id - The current position of the knight on the chessboard.
+ * @param {string} color - The color of the knight ('white' or 'black').
+ */
 function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
   let newId = id;
   const row = Math.floor(id / 8);
@@ -319,6 +341,13 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
   }
 }
 
+/**
+ * Calculates the possible moves for a king piece on the chessboard.
+ * 
+ * @param {number} id - The ID of the square where the king is located.
+ * @param {string} color - The color of the king piece ('white' or 'black').
+ * @returns {void}
+ */
 function kingMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
@@ -535,6 +564,12 @@ function kingMoves(id, color){
   }
 }
 
+/**
+ * Calculates the possible moves for a pawn on the chessboard.
+ * 
+ * @param {number} id - The ID of the pawn.
+ * @param {string} color - The color of the pawn ('white' or 'black').
+ */
 function pawnMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
@@ -628,7 +663,11 @@ function pawnMoves(id, color){
   }
 }
 
-// populates moves array based on the position of the piece and the type it is
+/**
+ * Calculates the possible moves for a selected chess piece.
+ * @param {HTMLElement} selectedPiece - The selected chess piece.
+ * @returns {Array} - An array of possible moves for the selected piece.
+ */
 function calculateMoves(selectedPiece) {
   moves = [];
   if(!selectedPiece)
@@ -661,13 +700,18 @@ function calculateMoves(selectedPiece) {
   return moves;
 }
 
-// signify to the player all possible moves by coloring squares red
+/**
+ * Changes the background color of each square in the moves array to crimson.
+ */
 function colorMoves() {
   moves.forEach(square => {
     square.style.backgroundColor = 'crimson';
   });
 }
 
+/**
+ * Switches the turns between 'White' and 'Black' and updates the turn display.
+ */
 function switchTurns() {
   if (turn === 'White') {
     turn = 'Black';
@@ -677,6 +721,11 @@ function switchTurns() {
   document.getElementById('turn').innerHTML = `${turn}'s Turn`;
 }
 
+/**
+ * Calculates the checks in the chess game.
+ * @param {HTMLElement} selectedPiece - The selected chess piece.
+ * @returns {string} - The color(s) of the checked player(s).
+ */
 function calculateChecks(selectedPiece) {
   checks.forEach(check => {
     check.style.backgroundColor = '';
@@ -704,6 +753,12 @@ function calculateChecks(selectedPiece) {
   return '';
 }
 
+/**
+ * Reverts the last move in the game.
+ * This function pops the last game state from the `gameStates` array,
+ * recreates the board based on the previous state, switches turns,
+ * and reattaches event listeners to the squares.
+ */
 function revertMove() {
   console.log("revertMove");
   gameStates.pop();
@@ -712,6 +767,10 @@ function revertMove() {
   listenOnSquares();
 }
 
+/**
+ * Animates the invalid move by changing the background color of the king piece.
+ * @param {string} color - The color of the king piece ('white' or 'black').
+ */
 function animateInvalidMove(color) {
   switch (color){
     case 'white':
@@ -730,6 +789,10 @@ function animateInvalidMove(color) {
   }
 }
 
+/**
+ * Checks if the current game state is a checkmate.
+ * @returns {boolean} Returns true if the game state is a checkmate, false otherwise.
+ */
 function checkForCheckMate(){
   let possibleMoves = [];
   let king;
@@ -829,7 +892,45 @@ function checkForCheckMate(){
   return false;
 }
 
-// allows for the player to click a piece on the board to receive information or make a move
+/**
+ * Makes a move for the bot player.
+ * @returns {Object} The move object containing the piece and destination.
+ */
+// TODO: Implement the minimax algorithm for the bot to play against human players
+function makeBotMove() {
+  let allMoves = [];
+  let bestMove = {};
+  let bestScore = -Infinity;
+  let color = 'black';
+  let allBlackPieces = document.querySelectorAll("div[color='black']");
+  let allWhitePieces = document.querySelectorAll("div[color='white']");
+  allBlackPieces.forEach(piece => {
+    let moves = calculateMoves(piece.parentNode);
+    moves.forEach(move => {
+      allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
+    });
+  });
+  // allMoves.forEach(move => {
+  //   let originalPiece = document.querySelector(`#${move.piece}`);
+  //   let originalDestination = document.querySelector(`[square-id="${move.destination}"]`);
+  //   makeMove(originalPiece, originalDestination);
+  //   calculateChecks();
+  //   let score = minimax(2, -Infinity, Infinity, false);
+  //   makeMove(originalDestination, originalPiece);
+  //   if(score > bestScore){
+  //     bestScore = score;
+  //     bestMove = move;
+  //   }
+  // });
+  let randomMove = Math.floor(Math.random() * allMoves.length);
+  console.log(allMoves[randomMove]);
+  return allMoves[randomMove];
+}
+
+
+/**
+ * Listens for click events on the chess squares and handles the logic for selecting and moving pieces.
+ */
 function listenOnSquares() {
   allSquares = document.querySelectorAll("div.square");
   allSquares.forEach(square => {
@@ -885,6 +986,7 @@ function listenOnSquares() {
               color == 'white' ? selfMove.play() : oppMove.play();
             if(!gameOver){
               switchTurns();
+              document.dispatchEvent(new Event("playerMoved"));
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
             }
           }
@@ -903,3 +1005,39 @@ function listenOnSquares() {
   });
 }
 listenOnSquares();
+
+// 
+document.addEventListener("playerMoved", function (e) {
+  console.log("bot");
+  if (turn === 'Black') {
+    let botMove = makeBotMove();
+    let botPiece = botMove.piece.parentNode;
+    let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
+    makeMove(botPiece, botDestination);
+    gameStates.push(updateFEN());
+    calculateChecks();
+    //! makes sure the random move is valid, remove this later
+    if(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){  
+      while(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){
+          revertMove();
+          //! when king puts himself in check, errors occur
+          botMove = makeBotMove();
+          botPiece = botMove.piece.parentNode;
+          botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
+          makeMove(botPiece, botDestination);
+          gameStates.push(updateFEN());
+          calculateChecks();
+        }
+    }
+    else if(checks.length > 0 && (gameOver = checkForCheckMate())){
+      checkmate.play();
+    }
+    else if(checks.length > 0)
+      check.play();
+    else
+      oppMove.play();
+    if(turn == "Black")
+      switchTurns();
+    document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
+  }
+});
