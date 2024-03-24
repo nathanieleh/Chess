@@ -341,7 +341,6 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
   }
 }
 
-<<<<<<< HEAD
 /**
  * Calculates the possible moves for a king piece on the chessboard.
  * 
@@ -349,11 +348,9 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
  * @param {string} color - The color of the king piece ('white' or 'black').
  * @returns {void}
  */
-=======
 //! Modify how the kings moves are calculated so we don't have to calculate checks every time
-//  PLAN: Use the revertMoves method to check if the king can move to certain places on the board
-//  for every move rather than just for castling
->>>>>>> 68a5a46ec507ae777da108bedfdc00efc8fe0da4
+//  TODO: Use the revertMoves method to check if the king can move to certain places on the board
+//  TODO: for every move rather than just for castling
 function kingMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
@@ -795,14 +792,11 @@ function animateInvalidMove(color) {
   }
 }
 
-<<<<<<< HEAD
 /**
  * Checks if the current game state is a checkmate.
  * @returns {boolean} Returns true if the game state is a checkmate, false otherwise.
  */
-=======
 //! Look into the forEach loop for each kingMoves value for checkmate issues
->>>>>>> 68a5a46ec507ae777da108bedfdc00efc8fe0da4
 function checkForCheckMate(){
   let possibleMoves = [];
   let king;
