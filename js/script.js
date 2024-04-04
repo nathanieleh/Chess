@@ -96,6 +96,7 @@ function makeMove(piece, destination) {
     destination.innerHTML = piece.innerHTML;
   piece.innerHTML = '';
   allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
+  gameStates.push(updateFEN());
 }
 
 /**
@@ -349,10 +350,9 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
  * @returns {void}
  */
 //! Modify how the kings moves are calculated so we don't have to calculate checks every time
-//  TODO: Use the revertMoves method to check if the king can move to certain places on the board
-//  TODO: for every move rather than just for castling
 function kingMoves(id, color){
   let newId = id;
+  let tempMoves = moves;
   const row = Math.floor(id / 8);
   const col = id % 8;
   newId = id - 1;
@@ -360,19 +360,30 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        console.log(allSquares[newId]);
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
-        }
+      //! when king puts himself in check, stuff goes wrong, this supposed solution does not work right now
+      else{
+        // transposeKing(allSquares[id], allSquares[newId]);
+        // moves = tempMoves;
+        // console.log(allSquares[newId]);
+        // if(allSquares[newId].style.backgroundColor != 'orange'){
+        //   moves.push(allSquares[newId]);
+        //   tempMoves = moves;
+        // }
+        // calculateChecksNoKing(allSquares[id].firstChild);
+        // moves = tempMoves;
       }
     }
   }
@@ -523,21 +534,27 @@ function kingMoves(id, color){
       }
     }
   }
-  let tempMoves = moves;
+  tempMoves = moves;
   // checks if castling is possible
   if(allSquares[id]?.firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
     for(let i = 1; i < 4; i++){
       newId = id + i;
       if(i == 3 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
           allSquares[newId].firstChild.getAttribute("castle") == 'true'){
-        makeMove(allSquares[id], allSquares[id + 1]);
-        calculateChecks();
+        transposeKing(allSquares[id], allSquares[id + 1]);
         moves = tempMoves;
         if(allSquares[id + 1].style.backgroundColor != 'orange'){
-          moves.push(allSquares[id + 2]);
-          tempMoves = moves;
+          allSquares[id + 2].innerHTML = allSquares[id].innerHTML;
+          allSquares[id].innerHTML = '';
+          calculateChecks();
+          allSquares[id].innerHTML = allSquares[id + 2].innerHTML;
+          allSquares[id + 2].innerHTML = '';
+          moves = tempMoves;
+          if(allSquares[id + 2].style.backgroundColor != 'orange'){
+            moves.push(allSquares[id + 2]);
+            tempMoves = moves;
+          }
         }
-        makeMove(allSquares[id + 1], allSquares[id]);
         calculateChecks();
         moves = tempMoves;
         allSquares[id].firstChild.setAttribute("castle", 'true');
@@ -549,14 +566,20 @@ function kingMoves(id, color){
       newId = id + i;
       if(i == -4 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
           allSquares[newId].firstChild.getAttribute("castle") == 'true'){
-        makeMove(allSquares[id], allSquares[id - 1]);
-        calculateChecks();
+        transposeKing(allSquares[id], allSquares[id - 1]);
         moves = tempMoves;
         if(allSquares[id - 1].style.backgroundColor != 'orange'){
-          moves.push(allSquares[id - 2]);
-          tempMoves = moves;
+          allSquares[id - 2].innerHTML = allSquares[id].innerHTML;
+          allSquares[id].innerHTML = '';
+          calculateChecks();
+          allSquares[id].innerHTML = allSquares[id - 2].innerHTML;
+          allSquares[id - 2].innerHTML = '';
+          moves = tempMoves;
+          if(allSquares[id - 2].style.backgroundColor != 'orange'){
+            moves.push(allSquares[id - 2]);
+            tempMoves = moves;
+          }
         }
-        makeMove(allSquares[id - 1], allSquares[id]);
         calculateChecks();
         moves = tempMoves;
         allSquares[id].firstChild.setAttribute("castle", 'true');
@@ -565,6 +588,20 @@ function kingMoves(id, color){
         break;
     }
   }
+}
+
+/**
+ * Helper function to check if king position at "to" is valid.
+ * 
+ * @param {HTMLElement} from - The original king position.
+ * @param {HTMLElement} to - The position to check.
+ */
+function transposeKing(from, to){
+  makeMove(from, to);
+  calculateChecksNoKing(from);
+  makeMove(to, from);
+  gameStates.pop();
+  gameStates.pop();
 }
 
 /**
@@ -754,6 +791,28 @@ function calculateChecks(selectedPiece) {
     return "white";
   }
   return '';
+}
+
+/**
+ * Calculates the checks in the chess game without kings.
+ * @param {HTMLElement} selectedPiece - The king to skip.
+ */
+function calculateChecksNoKing(selectedPiece) {
+  checks.forEach(check => {
+    check.style.backgroundColor = '';
+  });
+  console.log("checks", checks);
+  allPieces = document.querySelectorAll(".piece");
+  checks = [];
+  allPieces.forEach(piece => {
+    if(piece.id != selectedPiece.id){
+      calculateMoves(piece.parentNode);
+      moves = [];
+    }
+  });
+  checks.forEach(check => {
+    check.style.backgroundColor = 'orange';
+  });
 }
 
 /**
@@ -974,7 +1033,6 @@ function listenOnSquares() {
           const color = selectedPiece.firstChild.getAttribute("color");
           if(color == turn.toLowerCase()){
             makeMove(selectedPiece, destination);
-            gameStates.push(updateFEN());
             calculateChecks();
             if(document.getElementById("K").parentNode.style.backgroundColor == 'orange' && color == 'white' ||
               document.getElementById("k").parentNode.style.backgroundColor == 'orange' && color == 'black'){
@@ -998,7 +1056,7 @@ function listenOnSquares() {
               color == 'white' ? selfMove.play() : oppMove.play();
             if(!gameOver){
               switchTurns();
-              document.dispatchEvent(new Event("playerMoved"));
+              //! document.dispatchEvent(new Event("playerMoved"));
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
             }
           }
@@ -1026,7 +1084,6 @@ document.addEventListener("playerMoved", function (e) {
     let botPiece = botMove.piece.parentNode;
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
     makeMove(botPiece, botDestination);
-    gameStates.push(updateFEN());
     calculateChecks();
     //! makes sure the random move is valid, remove this later
     if(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){  
@@ -1037,7 +1094,6 @@ document.addEventListener("playerMoved", function (e) {
           botPiece = botMove.piece.parentNode;
           botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
           makeMove(botPiece, botDestination);
-          gameStates.push(updateFEN());
           calculateChecks();
         }
     }
