@@ -1,4 +1,4 @@
-let FENCode = startFEN;
+let FENCode = testFEN;
 let gameStates = [FENCode];
 createBoard(FENCode);
 
@@ -369,21 +369,25 @@ function kingMoves(id, color){
           moves.push(allSquares[newId]);
           tempMoves = moves;
         }
+        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
+          checks.push(allSquares[newId]);
+          checks.push(allSquares[id]);
+        }
         allSquares[newId].innerHTML = tempPiece;
         calculateChecksNoKing(allSquares[id].firstChild);
         moves = tempMoves;
       }
-      //! when king puts himself in check, stuff goes wrong, this supposed solution does not work right now
+      //! I need to find a way to check if the opposing king is occupying a square
       else{
-        // transposeKing(allSquares[id], allSquares[newId]);
-        // moves = tempMoves;
-        // console.log(allSquares[newId]);
-        // if(allSquares[newId].style.backgroundColor != 'orange'){
-        //   moves.push(allSquares[newId]);
-        //   tempMoves = moves;
-        // }
-        // calculateChecksNoKing(allSquares[id].firstChild);
-        // moves = tempMoves;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        console.log(allSquares[newId].style.backgroundColor);
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
+        }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
@@ -598,10 +602,21 @@ function kingMoves(id, color){
  */
 function transposeKing(from, to){
   makeMove(from, to);
+  console.log(from, to);
   calculateChecksNoKing(from);
   makeMove(to, from);
   gameStates.pop();
   gameStates.pop();
+}
+
+/**
+ * Helper function to check if the given king is in check by the other king.
+ * 
+ * @param {HTMLElement} king - The original king.
+ */
+//! FINISH THIS
+function calculateKingCheck(king){
+
 }
 
 /**
@@ -805,7 +820,7 @@ function calculateChecksNoKing(selectedPiece) {
   allPieces = document.querySelectorAll(".piece");
   checks = [];
   allPieces.forEach(piece => {
-    if(piece.id != selectedPiece.id){
+  if(/*piece.id*/piece.id.toLowerCase() != /*selectedPiece.id*/ 'k'){
       calculateMoves(piece.parentNode);
       moves = [];
     }
