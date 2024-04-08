@@ -1,4 +1,4 @@
-let FENCode = testFEN;
+let FENCode = startFEN;
 let gameStates = [FENCode];
 createBoard(FENCode);
 
@@ -38,8 +38,9 @@ let scatter = new Audio('./audio/scatter.mp3');
  * Makes a move on the chessboard.
  * @param {HTMLElement} piece - The piece being moved.
  * @param {HTMLElement} destination - The destination square where the piece is being moved to.
+ * @param {boolean} realMove - Flag to determine if this move was made by the player or the system.
  */
-function makeMove(piece, destination) {
+function makeMove(piece, destination, realMove) {
   const pieceType = piece.firstChild.getAttribute("id").toLowerCase();
   const color = piece.firstChild.getAttribute("color");
   const from = parseInt(piece.getAttribute("square-id"));
@@ -48,14 +49,15 @@ function makeMove(piece, destination) {
   allPawns = document.querySelectorAll('.square #p, .square #P');
   // handles enpassant for pawns and queen promotion
   if(pieceType == 'p'){
-    if(Math.abs(from - to) == 16)
+    if(Math.abs(from - to) == 16){
       piece.firstChild.setAttribute("enpassant", 'true');
+    }
     if(Math.abs(from - to) != 8){
       if(color == "white"){
         const enPassantPiece = document.querySelector(`[square-id="${to + 8}"]`);
         if(enPassantPiece && enPassantPiece.firstChild &&
           enPassantPiece.firstChild.getAttribute("id").toLowerCase() == "p"
-          && enPassantPiece.firstChild.getAttribute("enpassant") == 'true')
+          && enPassantPiece.firstChild.getAttribute("enpassant") == 'true'){}
             enPassantPiece.innerHTML = '';
       }
       else {
@@ -72,7 +74,7 @@ function makeMove(piece, destination) {
     }
   }
   // handles castling
-  if(pieceType == 'k'){
+  if(pieceType == 'k' && realMove){
     piece.firstChild.setAttribute("castle", 'false');
     // castling king side
     if(from - to == -2){
@@ -95,8 +97,10 @@ function makeMove(piece, destination) {
   if(!placementHandled)
     destination.innerHTML = piece.innerHTML;
   piece.innerHTML = '';
-  allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
-  gameStates.push(updateFEN());
+  if(realMove){
+    allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
+    gameStates.push(updateFEN());
+  }
 }
 
 /**
@@ -347,7 +351,6 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
  * 
  * @param {number} id - The ID of the square where the king is located.
  * @param {string} color - The color of the king piece ('white' or 'black').
- * @returns {void}
  */
 //! Modify how the kings moves are calculated so we don't have to calculate checks every time
 function kingMoves(id, color){
@@ -364,24 +367,17 @@ function kingMoves(id, color){
         let tempPiece = allSquares[newId].innerHTML;
         transposeKing(allSquares[id], allSquares[newId]);
         moves = tempMoves;
-        console.log(allSquares[newId]);
         if(allSquares[newId].style.backgroundColor != 'orange'){
           moves.push(allSquares[newId]);
           tempMoves = moves;
-        }
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
         }
         allSquares[newId].innerHTML = tempPiece;
         calculateChecksNoKing(allSquares[id].firstChild);
         moves = tempMoves;
       }
-      //! I need to find a way to check if the opposing king is occupying a square
       else{
         transposeKing(allSquares[id], allSquares[newId]);
         moves = tempMoves;
-        console.log(allSquares[newId].style.backgroundColor);
         if(allSquares[newId].style.backgroundColor != 'orange'){
           moves.push(allSquares[newId]);
           tempMoves = moves;
@@ -396,19 +392,27 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      else{
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
@@ -417,19 +421,27 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      else{
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
@@ -438,19 +450,27 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      else{
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
@@ -459,19 +479,27 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      else{
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
@@ -480,19 +508,27 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      else{
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
@@ -501,19 +537,27 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      else{
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
@@ -522,44 +566,57 @@ function kingMoves(id, color){
     if(allSquares[newId].firstChild?.getAttribute("color") == color){
     }
     else {
-      if(allSquares[newId].style.backgroundColor != 'orange'){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      if(allSquares[newId].firstChild){
+        let tempPiece = allSquares[newId].innerHTML;
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        allSquares[newId].innerHTML = tempPiece;
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
-      else if(allSquares[newId].firstChild){
-        moves.push(allSquares[newId]);
-        if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-          checks.push(allSquares[newId]);
-          checks.push(allSquares[id]);
+      else{
+        transposeKing(allSquares[id], allSquares[newId]);
+        moves = tempMoves;
+        if(allSquares[newId].style.backgroundColor != 'orange'){
+          moves.push(allSquares[newId]);
+          tempMoves = moves;
         }
+        calculateChecksNoKing(allSquares[id].firstChild);
+        moves = tempMoves;
       }
     }
   }
   tempMoves = moves;
   // checks if castling is possible
+  //! castling issues need to get resolved when king is occupying the square
   if(allSquares[id]?.firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
     for(let i = 1; i < 4; i++){
       newId = id + i;
       if(i == 3 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
           allSquares[newId].firstChild.getAttribute("castle") == 'true'){
         transposeKing(allSquares[id], allSquares[id + 1]);
+        console.log(allSquares[id].firstChild.getAttribute("castle"));
         moves = tempMoves;
         if(allSquares[id + 1].style.backgroundColor != 'orange'){
           allSquares[id + 2].innerHTML = allSquares[id].innerHTML;
           allSquares[id].innerHTML = '';
-          calculateChecks();
+          calculateChecksNoKing();
+          if(allSquares[id + 2].style.backgroundColor != 'orange'){
+            moves.push(allSquares[id + 2]);
+            calculateKingCheck(allSquares[id + 2].firstChild);
+            moves = moves.filter(element => !checks.includes(element));
+            tempMoves = moves;
+            console.log(moves);
+          }
           allSquares[id].innerHTML = allSquares[id + 2].innerHTML;
           allSquares[id + 2].innerHTML = '';
           moves = tempMoves;
-          if(allSquares[id + 2].style.backgroundColor != 'orange'){
-            moves.push(allSquares[id + 2]);
-            tempMoves = moves;
-          }
         }
-        calculateChecks();
+        calculateChecksNoKing();
         moves = tempMoves;
         allSquares[id].firstChild.setAttribute("castle", 'true');
       }
@@ -575,16 +632,18 @@ function kingMoves(id, color){
         if(allSquares[id - 1].style.backgroundColor != 'orange'){
           allSquares[id - 2].innerHTML = allSquares[id].innerHTML;
           allSquares[id].innerHTML = '';
-          calculateChecks();
+          calculateChecksNoKing();
+          if(allSquares[id - 2].style.backgroundColor != 'orange'){
+            moves.push(allSquares[id - 2]);
+            calculateKingCheck(allSquares[id - 2].firstChild);
+            moves = moves.filter(element => !checks.includes(element));
+            tempMoves = moves;
+          }
           allSquares[id].innerHTML = allSquares[id - 2].innerHTML;
           allSquares[id - 2].innerHTML = '';
           moves = tempMoves;
-          if(allSquares[id - 2].style.backgroundColor != 'orange'){
-            moves.push(allSquares[id - 2]);
-            tempMoves = moves;
-          }
         }
-        calculateChecks();
+        calculateChecksNoKing();
         moves = tempMoves;
         allSquares[id].firstChild.setAttribute("castle", 'true');
       }
@@ -592,6 +651,11 @@ function kingMoves(id, color){
         break;
     }
   }
+  calculateKingCheck(allSquares[id].firstChild);
+  moves = moves.filter(element => !checks.includes(element));
+  tempMoves = moves;
+  calculateChecksNoKing();
+  moves = tempMoves;
 }
 
 /**
@@ -601,12 +665,9 @@ function kingMoves(id, color){
  * @param {HTMLElement} to - The position to check.
  */
 function transposeKing(from, to){
-  makeMove(from, to);
-  console.log(from, to);
-  calculateChecksNoKing(from);
-  makeMove(to, from);
-  gameStates.pop();
-  gameStates.pop();
+  makeMove(from, to, false);
+  calculateChecksNoKing();
+  makeMove(to, from, false);
 }
 
 /**
@@ -614,9 +675,22 @@ function transposeKing(from, to){
  * 
  * @param {HTMLElement} king - The original king.
  */
-//! FINISH THIS
-function calculateKingCheck(king){
-
+function calculateKingCheck(givenKing){
+  checks = [];
+  let givenKingId;
+  let checkKingId;
+  if(givenKing.color == "black"){
+    givenKingId = parseInt(document.querySelector('#k').parentNode.getAttribute("square-id"));
+    checkKingId = parseInt(document.querySelector('#K').parentNode.getAttribute("square-id"));
+  }
+  else{
+    givenKingId = parseInt(document.querySelector('#K').parentNode.getAttribute("square-id"));
+    checkKingId = parseInt(document.querySelector('#k').parentNode.getAttribute("square-id"));
+  }
+  let possKingMoves = [givenKingId - 9, givenKingId - 8, givenKingId - 7, givenKingId - 1, givenKingId + 1, givenKingId + 7, givenKingId + 8, givenKingId + 9];
+  let occupiedKingMoves = [checkKingId - 9, checkKingId - 8, checkKingId - 7, checkKingId - 1, checkKingId + 1, checkKingId + 7, checkKingId + 8, checkKingId + 9];
+  let intersection = possKingMoves.filter(element => occupiedKingMoves.includes(element));
+  intersection.forEach(element => checks.push(allSquares[element]));
 }
 
 /**
@@ -812,15 +886,14 @@ function calculateChecks(selectedPiece) {
  * Calculates the checks in the chess game without kings.
  * @param {HTMLElement} selectedPiece - The king to skip.
  */
-function calculateChecksNoKing(selectedPiece) {
+function calculateChecksNoKing() {
   checks.forEach(check => {
     check.style.backgroundColor = '';
   });
-  console.log("checks", checks);
   allPieces = document.querySelectorAll(".piece");
   checks = [];
   allPieces.forEach(piece => {
-  if(/*piece.id*/piece.id.toLowerCase() != /*selectedPiece.id*/ 'k'){
+  if(piece.id.toLowerCase() != 'k'){
       calculateMoves(piece.parentNode);
       moves = [];
     }
@@ -837,7 +910,6 @@ function calculateChecksNoKing(selectedPiece) {
  * and reattaches event listeners to the squares.
  */
 function revertMove() {
-  console.log("revertMove");
   gameStates.pop();
   createBoard(gameStates[gameStates.length - 1]);
   switchTurns();
@@ -870,108 +942,25 @@ function animateInvalidMove(color) {
  * Checks if the current game state is a checkmate.
  * @returns {boolean} Returns true if the game state is a checkmate, false otherwise.
  */
-//! Look into the forEach loop for each kingMoves value for checkmate issues
 function checkForCheckMate(){
   let possibleMoves = [];
-  let king;
-  console.log("checking for mate");
   if(turn.toLowerCase() == 'white'){
-    king = document.getElementById("k");
     allBlack.forEach(piece => {
-      if(piece.id != 'k'){
-        let checkMoves = calculateMoves(piece.parentNode);
-        checkMoves.forEach(move => possibleMoves.push(move));
-      }
+      let checkMoves = calculateMoves(piece.parentNode);
+      checkMoves.forEach(move => possibleMoves.push(move));
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
-    console.log("possible moves after check");
-    possibleMoves.forEach(move => console.log(move.getAttribute('square-id')));
-    // check if king can move now
-    let kingCanMove = false;
-    let castling = document.getElementById("k").castle;
     if(possibleMoves.length == 0){
-      let tempChecks = checks;
-      console.log("check if king can move");
-      let kingMoves = calculateMoves(king.parentNode);
-      kingMoves.forEach(move => {
-        let originalKingSquare = document.getElementById("k").parentNode;
-        let nearbyPiece = '';
-        if(move.innerHTML != ''){
-          nearbyPiece = move.innerHTML;
-        }
-        makeMove(document.getElementById('k').parentNode, move);
-        calculateChecks();
-        makeMove(move, originalKingSquare);
-        document.getElementById('k').setAttribute("castle", castling);
-        if(nearbyPiece)
-          move.innerHTML = nearbyPiece;
-        if(!checks.includes(move)){
-          console.log("king can move", move.getAttribute("square-id"));
-          console.log("checks", checks);
-          kingCanMove = true;
-          return;
-        }
-      });
-      console.log("king moves", kingMoves);
-      if(kingCanMove == true){
-        checks = tempChecks;
-        console.log("No checkmate", checks);
-        return false;
-      }
-      else if(document.getElementById('k').parentNode.style.backgroundColor != "orange"){
-        return false;
-      }
-      checks = tempChecks;
-      console.log("checkmate", checks);
       return true;
     }
   }
   if(turn.toLowerCase() == 'black'){
-    king = document.getElementById("K");
     allWhite.forEach(piece => {
-      if(piece.id != 'K'){
-        let checkMoves = calculateMoves(piece.parentNode);
-        checkMoves.forEach(move => possibleMoves.push(move));
-      }
+      let checkMoves = calculateMoves(piece.parentNode);
+      checkMoves.forEach(move => possibleMoves.push(move));
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
-    console.log("possible moves after check");
-    possibleMoves.forEach(move => console.log(move.getAttribute('square-id')));
-    // check if king can move now
-    let kingCanMove = false;
     if(possibleMoves.length == 0){
-      let tempChecks = checks;
-      console.log("check if king can move");
-      let kingMoves = calculateMoves(king.parentNode);
-      kingMoves.forEach(move => {
-        let originalKingSquare = document.getElementById("K").parentNode;
-        let nearbyPiece = '';
-        if(move.innerHTML != ''){
-          nearbyPiece = move.innerHTML;
-        }
-        makeMove(document.getElementById('K').parentNode, move);
-        calculateChecks();
-        makeMove(move, originalKingSquare);
-        if(nearbyPiece)
-          move.innerHTML = nearbyPiece;
-        if(!checks.includes(move)){
-          console.log("king can move", move.getAttribute("square-id"));
-          console.log("checks", checks);
-          kingCanMove = true;
-          return;
-        }
-      });
-      console.log("king moves", kingMoves);
-      if(kingCanMove == true){
-        checks = tempChecks;
-        console.log("No checkmate", checks);
-        return false;
-      }
-      else if(document.getElementById('K').parentNode.style.backgroundColor != "orange"){
-        return false;
-      }
-      checks = tempChecks;
-      console.log("checkmate", checks);
       return true;
     }
   }
@@ -1026,7 +1015,6 @@ function listenOnSquares() {
       let pieces = allPieces.length;
       // no piece has been selected yet, so select this one and show possible moves
       if(!selectedPiece && !gameOver){
-        console.log('selected');
         selectedPiece = e.target;
         if(selectedPiece.innerHTML == ''){
           selectedPiece = '';
@@ -1044,10 +1032,9 @@ function listenOnSquares() {
       else if(!gameOver){
         selectedPiece.style.backgroundColor = '';
         if(moves.includes(destination)){
-          console.log('move');
           const color = selectedPiece.firstChild.getAttribute("color");
           if(color == turn.toLowerCase()){
-            makeMove(selectedPiece, destination);
+            makeMove(selectedPiece, destination, true);
             calculateChecks();
             if(document.getElementById("K").parentNode.style.backgroundColor == 'orange' && color == 'white' ||
               document.getElementById("k").parentNode.style.backgroundColor == 'orange' && color == 'black'){
@@ -1091,14 +1078,13 @@ function listenOnSquares() {
 }
 listenOnSquares();
 
-// 
 document.addEventListener("playerMoved", function (e) {
   console.log("bot");
   if (turn === 'Black') {
     let botMove = makeBotMove();
     let botPiece = botMove.piece.parentNode;
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-    makeMove(botPiece, botDestination);
+    makeMove(botPiece, botDestination, true);
     calculateChecks();
     //! makes sure the random move is valid, remove this later
     if(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){  
@@ -1108,7 +1094,7 @@ document.addEventListener("playerMoved", function (e) {
           botMove = makeBotMove();
           botPiece = botMove.piece.parentNode;
           botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-          makeMove(botPiece, botDestination);
+          makeMove(botPiece, botDestination, true);
           calculateChecks();
         }
     }
