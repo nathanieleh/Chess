@@ -592,25 +592,23 @@ function kingMoves(id, color){
   }
   tempMoves = moves;
   // checks if castling is possible
-  //! castling issues need to get resolved when king is occupying the square
   if(allSquares[id]?.firstChild?.getAttribute("castle") == 'true' && !checks.includes(allSquares[id])){
     for(let i = 1; i < 4; i++){
       newId = id + i;
       if(i == 3 && allSquares[newId]?.firstChild?.getAttribute("id").toLowerCase() == 'r' &&
           allSquares[newId].firstChild.getAttribute("castle") == 'true'){
         transposeKing(allSquares[id], allSquares[id + 1]);
-        console.log(allSquares[id].firstChild.getAttribute("castle"));
         moves = tempMoves;
         if(allSquares[id + 1].style.backgroundColor != 'orange'){
           allSquares[id + 2].innerHTML = allSquares[id].innerHTML;
           allSquares[id].innerHTML = '';
           calculateChecksNoKing();
+          moves = tempMoves;
           if(allSquares[id + 2].style.backgroundColor != 'orange'){
             moves.push(allSquares[id + 2]);
             calculateKingCheck(allSquares[id + 2].firstChild);
             moves = moves.filter(element => !checks.includes(element));
             tempMoves = moves;
-            console.log(moves);
           }
           allSquares[id].innerHTML = allSquares[id + 2].innerHTML;
           allSquares[id + 2].innerHTML = '';
@@ -633,6 +631,7 @@ function kingMoves(id, color){
           allSquares[id - 2].innerHTML = allSquares[id].innerHTML;
           allSquares[id].innerHTML = '';
           calculateChecksNoKing();
+          moves = tempMoves;
           if(allSquares[id - 2].style.backgroundColor != 'orange'){
             moves.push(allSquares[id - 2]);
             calculateKingCheck(allSquares[id - 2].firstChild);
