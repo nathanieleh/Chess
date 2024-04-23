@@ -352,7 +352,6 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
  * @param {number} id - The ID of the square where the king is located.
  * @param {string} color - The color of the king piece ('white' or 'black').
  */
-//! Modify how the kings moves are calculated so we don't have to calculate checks every time
 function kingMoves(id, color){
   let newId = id;
   let tempMoves = moves;
@@ -944,23 +943,27 @@ function animateInvalidMove(color) {
 function checkForCheckMate(){
   let possibleMoves = [];
   if(turn.toLowerCase() == 'white'){
+    let blackKing = document.getElementById("k");
     allBlack.forEach(piece => {
       let checkMoves = calculateMoves(piece.parentNode);
       checkMoves.forEach(move => possibleMoves.push(move));
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
     if(possibleMoves.length == 0){
-      return true;
+      possibleMoves = calculateMoves(blackKing.parentNode);
+      return possibleMoves.length == 0;
     }
   }
   if(turn.toLowerCase() == 'black'){
+    let whiteKing = document.getElementById("K");
     allWhite.forEach(piece => {
       let checkMoves = calculateMoves(piece.parentNode);
       checkMoves.forEach(move => possibleMoves.push(move));
     });
     possibleMoves = possibleMoves.filter(move => checks.includes(move));
     if(possibleMoves.length == 0){
-      return true;
+      possibleMoves = calculateMoves(whiteKing.parentNode);
+      return possibleMoves.length == 0;
     }
   }
   return false;
@@ -981,7 +984,14 @@ function makeBotMove() {
   allBlackPieces.forEach(piece => {
     let moves = calculateMoves(piece.parentNode);
     moves.forEach(move => {
-      allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
+      if(checks.length > 0){
+        if(checks.includes(move)){
+          allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
+        }
+      }
+      else{
+        allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
+      }
     });
   });
   // allMoves.forEach(move => {
@@ -997,7 +1007,7 @@ function makeBotMove() {
   //   }
   // });
   let randomMove = Math.floor(Math.random() * allMoves.length);
-  console.log(allMoves[randomMove]);
+  console.log(allMoves, "allMoves");
   return allMoves[randomMove];
 }
 
@@ -1057,7 +1067,7 @@ function listenOnSquares() {
               color == 'white' ? selfMove.play() : oppMove.play();
             if(!gameOver){
               switchTurns();
-              //! document.dispatchEvent(new Event("playerMoved"));
+              document.dispatchEvent(new Event("playerMoved"));
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
             }
           }
@@ -1078,18 +1088,19 @@ function listenOnSquares() {
 listenOnSquares();
 
 document.addEventListener("playerMoved", function (e) {
-  console.log("bot");
+  //! When bot selects king to move, an error occurs
+  //! its parentNode does not exist and my guess is that it has something to do with 
+  //! how I am calculating the king's moves
   if (turn === 'Black') {
     let botMove = makeBotMove();
     let botPiece = botMove.piece.parentNode;
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
     makeMove(botPiece, botDestination, true);
     calculateChecks();
-    //! makes sure the random move is valid, remove this later
+    // deals with pinned pieces
     if(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){  
       while(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){
           revertMove();
-          //! when king puts himself in check, errors occur
           botMove = makeBotMove();
           botPiece = botMove.piece.parentNode;
           botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
@@ -1104,6 +1115,9 @@ document.addEventListener("playerMoved", function (e) {
       check.play();
     else
       oppMove.play();
+    if(turn == "Black")
+      switchTurns();
+    document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
     if(turn == "Black")
       switchTurns();
     document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
