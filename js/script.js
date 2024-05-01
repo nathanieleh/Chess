@@ -1,10 +1,11 @@
 let FENCode = startFEN;
 let gameStates = [FENCode];
 let opponent = "Player";
-createBoard(FENCode);
+createBoard(startFEN);
 
 const playerMoved = new CustomEvent("playerMoved");
 const button = document.getElementById('button');
+button.innerHTML = `Click to Change Opponent: ${opponent}`;
 button.addEventListener("click", function () {
   opponent == "Bot" ? opponent = "Player" : opponent = "Bot";
   button.innerHTML = `Click to Change Opponent: ${opponent}`;
@@ -40,6 +41,9 @@ let scatter = new Audio('./audio/scatter.mp3');
  * @param {boolean} realMove - Flag to determine if this move was made by the player or the system.
  */
 function makeMove(piece, destination, realMove) {
+  //! remove once bot king moves are good
+  if(!piece)
+    return;
   const pieceType = piece.firstChild.getAttribute("id").toLowerCase();
   const color = piece.firstChild.getAttribute("color");
   const from = parseInt(piece.getAttribute("square-id"));
@@ -982,6 +986,7 @@ function makeBotMove() {
   let color = 'black';
   let allBlackPieces = document.querySelectorAll("div[color='black']");
   let allWhitePieces = document.querySelectorAll("div[color='white']");
+  //! king piece may not be the same throughout calculation which might cause piece to be null and moves to not be calculated
   allBlackPieces.forEach(piece => {
     let moves = calculateMoves(piece.parentNode);
     moves.forEach(move => {
@@ -995,6 +1000,20 @@ function makeBotMove() {
       }
     });
   });
+  //! experimenting
+  // let kingMoves = calculateMoves(document.getElementById('k').parentNode);
+  // console.log(kingMoves);
+  // kingMoves.forEach(move => {
+  //   if(checks.length > 0){
+  //     if(!checks.includes(move)){
+  //       allMoves.push({piece: document.getElementById('k').parentNode, destination: move.getAttribute("square-id")});
+  //     }
+  //   }
+  //   else{
+  //     allMoves.push({piece: document.getElementById('k').parentNode, destination: move.getAttribute("square-id")});
+  //   }
+  // });
+
   // allMoves.forEach(move => {
   //   let originalPiece = document.querySelector(`#${move.piece}`);
   //   let originalDestination = document.querySelector(`[square-id="${move.destination}"]`);
@@ -1008,7 +1027,6 @@ function makeBotMove() {
   //   }
   // });
   let randomMove = Math.floor(Math.random() * allMoves.length);
-  console.log(allMoves, "allMoves");
   return allMoves[randomMove];
 }
 
@@ -1089,14 +1107,16 @@ function listenOnSquares() {
 }
 listenOnSquares();
 
-document.addEventListener("playerMoved", function (e) {
-  //! When bot selects king to move, an error occurs
-  //! its parentNode does not exist and my guess is that it has something to do with 
-  //! how I am calculating the king's moves
+document.addEventListener("playerMoved", function () {
   if (turn === 'Black') {
+    //! returns null when the king is in check sometimes
     let botMove = makeBotMove();
+    console.log(botMove);
     let botPiece = botMove.piece.parentNode;
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
+    //! select king if piece is null
+    if(!botPiece)
+      botPiece = document.getElementById('k').parentNode;
     makeMove(botPiece, botDestination, true);
     calculateChecks();
     // deals with pinned pieces
@@ -1117,9 +1137,6 @@ document.addEventListener("playerMoved", function (e) {
       check.play();
     else
       oppMove.play();
-    if(turn == "Black")
-      switchTurns();
-    document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
     if(turn == "Black")
       switchTurns();
     document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
