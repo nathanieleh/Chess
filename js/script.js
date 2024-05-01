@@ -1,14 +1,13 @@
 let FENCode = startFEN;
 let gameStates = [FENCode];
+let opponent = "Player";
 createBoard(FENCode);
 
 const playerMoved = new CustomEvent("playerMoved");
 const button = document.getElementById('button');
 button.addEventListener("click", function () {
-  const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
-
-  // Change the button's background color
-  button.style.backgroundColor = randomColor;
+  opponent == "Bot" ? opponent = "Player" : opponent = "Bot";
+  button.innerHTML = `Click to Change Opponent: ${opponent}`;
 });
 
 let turn = 'White';
@@ -56,16 +55,18 @@ function makeMove(piece, destination, realMove) {
       if(color == "white"){
         const enPassantPiece = document.querySelector(`[square-id="${to + 8}"]`);
         if(enPassantPiece && enPassantPiece.firstChild &&
-          enPassantPiece.firstChild.getAttribute("id").toLowerCase() == "p"
-          && enPassantPiece.firstChild.getAttribute("enpassant") == 'true'){}
+          enPassantPiece.firstChild.getAttribute("id") == "p" &&
+          enPassantPiece.firstChild.getAttribute("enpassant") == 'true'){
             enPassantPiece.innerHTML = '';
+          }
       }
       else {
         const enPassantPiece = document.querySelector(`[square-id="${to - 8}"]`);
         if(enPassantPiece && enPassantPiece.firstChild &&
-          enPassantPiece.firstChild.getAttribute("id").toLowerCase() == "p"
-          && enPassantPiece.firstChild.getAttribute("enpassant") == 'true')
+          enPassantPiece.firstChild.getAttribute("id") == "P" &&
+          enPassantPiece.firstChild.getAttribute("enpassant") == 'true'){
             enPassantPiece.innerHTML = '';
+          }
       }
     }
     if(Math.floor(to / 8) == 0 || Math.floor(to / 8) == 7){
@@ -1067,7 +1068,8 @@ function listenOnSquares() {
               color == 'white' ? selfMove.play() : oppMove.play();
             if(!gameOver){
               switchTurns();
-              document.dispatchEvent(new Event("playerMoved"));
+              if(color == 'white' && opponent == "Bot")
+                document.dispatchEvent(new Event("playerMoved"));
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
             }
           }
