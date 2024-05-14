@@ -41,9 +41,6 @@ let scatter = new Audio('./audio/scatter.mp3');
  * @param {boolean} realMove - Flag to determine if this move was made by the player or the system.
  */
 function makeMove(piece, destination, realMove) {
-  //! remove once bot king moves are good
-  if(!piece)
-    return;
   const pieceType = piece.firstChild.getAttribute("id").toLowerCase();
   const color = piece.firstChild.getAttribute("color");
   const from = parseInt(piece.getAttribute("square-id"));
@@ -986,33 +983,32 @@ function makeBotMove() {
   let color = 'black';
   let allBlackPieces = document.querySelectorAll("div[color='black']");
   let allWhitePieces = document.querySelectorAll("div[color='white']");
-  //! king piece may not be the same throughout calculation which might cause piece to be null and moves to not be calculated
   allBlackPieces.forEach(piece => {
-    let moves = calculateMoves(piece.parentNode);
-    moves.forEach(move => {
-      if(checks.length > 0){
-        if(checks.includes(move)){
+    if(piece.id != 'k'){
+      let moves = calculateMoves(piece.parentNode);
+      moves.forEach(move => {
+        if(checks.length > 0){
+          if(checks.includes(move)){
+            allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
+          }
+        }
+        else{
           allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
         }
-      }
-      else{
-        allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
-      }
-    });
+      });
+    }
   });
-  //! experimenting
-  // let kingMoves = calculateMoves(document.getElementById('k').parentNode);
-  // console.log(kingMoves);
-  // kingMoves.forEach(move => {
-  //   if(checks.length > 0){
-  //     if(!checks.includes(move)){
-  //       allMoves.push({piece: document.getElementById('k').parentNode, destination: move.getAttribute("square-id")});
-  //     }
-  //   }
-  //   else{
-  //     allMoves.push({piece: document.getElementById('k').parentNode, destination: move.getAttribute("square-id")});
-  //   }
-  // });
+  let kingMoves = calculateMoves(document.getElementById('k').parentNode);
+  kingMoves.forEach(move => {
+    if(checks.length > 0){
+      if(checks.includes(move)){
+        allMoves.push({piece: null, destination: move.getAttribute("square-id")});
+      }
+    }
+    else{
+      allMoves.push({piece: null, destination: move.getAttribute("square-id")});
+    }
+  });
 
   // allMoves.forEach(move => {
   //   let originalPiece = document.querySelector(`#${move.piece}`);
@@ -1027,6 +1023,11 @@ function makeBotMove() {
   //   }
   // });
   let randomMove = Math.floor(Math.random() * allMoves.length);
+  //! When king is in check, errors occur, but most is fixed now
+  console.log(kingMoves);
+  console.log(allMoves[randomMove]);
+  if(!allMoves[randomMove].piece)
+    allMoves[randomMove].piece = document.getElementById('k');
   return allMoves[randomMove];
 }
 
@@ -1109,14 +1110,10 @@ listenOnSquares();
 
 document.addEventListener("playerMoved", function () {
   if (turn === 'Black') {
-    //! returns null when the king is in check sometimes
     let botMove = makeBotMove();
     console.log(botMove);
     let botPiece = botMove.piece.parentNode;
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-    //! select king if piece is null
-    if(!botPiece)
-      botPiece = document.getElementById('k').parentNode;
     makeMove(botPiece, botDestination, true);
     calculateChecks();
     // deals with pinned pieces
