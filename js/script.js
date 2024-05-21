@@ -1,7 +1,7 @@
 let FENCode = startFEN;
 let gameStates = [FENCode];
 let opponent = "Player";
-createBoard(startFEN);
+createBoard(FENCode);
 
 const playerMoved = new CustomEvent("playerMoved");
 const button = document.getElementById('button');
@@ -1023,9 +1023,10 @@ function makeBotMove() {
   //   }
   // });
   let randomMove = Math.floor(Math.random() * allMoves.length);
-  //! When king is in check, errors occur, but most is fixed now
-  console.log(kingMoves);
-  console.log(allMoves[randomMove]);
+  if(allMoves.length == 0 && kingMoves.length != 0){
+    randomMove = Math.floor(Math.random() * kingMoves.length);
+    return {piece: document.getElementById('k'), destination: kingMoves[randomMove].getAttribute("square-id")};
+  }
   if(!allMoves[randomMove].piece)
     allMoves[randomMove].piece = document.getElementById('k');
   return allMoves[randomMove];
