@@ -1,11 +1,13 @@
 const PORT = process.env.PORT || 3000;
 import express from 'express';
 import { Worker } from 'worker_threads';
-const stockfish = new Worker('./node_modules/stockfish/src/stockfish-nnue-16.js');
+import { stockfish } from 'stockfish';
+// const stockfish = new Worker('./node_modules/stockfish/src/stockfish-nnue-16.js');
 
 const app = express();
+const engine = stockfish();
 
-stockfish.onmessage = function(event) {
+engine.onmessage = function(event) {
   let message = event.data;
   console.log('Received message from Stockfish:', message);
   // Check if Stockfish is ready
