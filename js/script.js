@@ -1001,32 +1001,12 @@ function makeBotMove() {
   let kingMoves = calculateMoves(document.getElementById('k').parentNode);
   let kingPosition = document.getElementById('k').parentNode.getAttribute("square-id");
   kingMoves.forEach(move => {
-    if(checks.length > 0){
-      if(checks.includes(move)){
-        allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
-      }
-    }
-    else{
-      allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
-    }
+    allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
   });
-  console.log("pieceMoves", allMoves);
-  console.log("kingMoves", kingMoves);
 
   for (let i = 0; i < allMoves.length; i++) {
     const move = allMoves[i];
-    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
-        document.querySelector(`[square-id="${move.destination}"]`), false);
-    const score = evaluateBoard();
-    createBoard(gameStates[gameStates.length - 1]);
-    listenOnSquares();
-    if (score < bestScore) {
-      bestScore = score;
-      bestMove = move;
-    }
-  }
-  for (let i = 0; i < kingMoves.length; i++) {
-    const move = kingMoves[i];
+    console.log(move.piece)
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
         document.querySelector(`[square-id="${move.destination}"]`), false);
     const score = evaluateBoard();
@@ -1167,7 +1147,6 @@ listenOnSquares();
 document.addEventListener("playerMoved", function () {
   if (turn === 'Black') {
     let botMove = makeBotMove();
-    console.log(botMove);
     let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
     makeMove(botPiece, botDestination, true);
