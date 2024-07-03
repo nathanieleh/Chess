@@ -979,7 +979,7 @@ function checkForCheckMate(){
 function makeBotMove() {
   let allMoves = [];
   let bestMove = {};
-  let bestScore = -Infinity;
+  let bestScore = Infinity;
   let color = 'black';
   let allBlackPieces = document.querySelectorAll("div[color='black']");
   let allWhitePieces = document.querySelectorAll("div[color='white']");
@@ -989,47 +989,101 @@ function makeBotMove() {
       moves.forEach(move => {
         if(checks.length > 0){
           if(checks.includes(move)){
-            allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
+            allMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
           }
         }
         else{
-          allMoves.push({piece: piece, destination: move.getAttribute("square-id")});
+          allMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
         }
       });
     }
   });
   let kingMoves = calculateMoves(document.getElementById('k').parentNode);
+  let kingPosition = document.getElementById('k').parentNode.getAttribute("square-id");
   kingMoves.forEach(move => {
     if(checks.length > 0){
       if(checks.includes(move)){
-        allMoves.push({piece: null, destination: move.getAttribute("square-id")});
+        allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
       }
     }
     else{
-      allMoves.push({piece: null, destination: move.getAttribute("square-id")});
+      allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
     }
   });
+  console.log("pieceMoves", allMoves);
+  console.log("kingMoves", kingMoves);
 
-  // allMoves.forEach(move => {
-  //   let originalPiece = document.querySelector(`#${move.piece}`);
-  //   let originalDestination = document.querySelector(`[square-id="${move.destination}"]`);
-  //   makeMove(originalPiece, originalDestination);
-  //   calculateChecks();
-  //   let score = minimax(2, -Infinity, Infinity, false);
-  //   makeMove(originalDestination, originalPiece);
-  //   if(score > bestScore){
-  //     bestScore = score;
-  //     bestMove = move;
-  //   }
-  // });
-  let randomMove = Math.floor(Math.random() * allMoves.length);
-  if(allMoves.length == 0 && kingMoves.length != 0){
-    randomMove = Math.floor(Math.random() * kingMoves.length);
-    return {piece: document.getElementById('k'), destination: kingMoves[randomMove].getAttribute("square-id")};
+  for (let i = 0; i < allMoves.length; i++) {
+    const move = allMoves[i];
+    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
+        document.querySelector(`[square-id="${move.destination}"]`), false);
+    const score = evaluateBoard();
+    createBoard(gameStates[gameStates.length - 1]);
+    listenOnSquares();
+    if (score < bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
   }
-  if(!allMoves[randomMove].piece)
-    allMoves[randomMove].piece = document.getElementById('k');
-  return allMoves[randomMove];
+  for (let i = 0; i < kingMoves.length; i++) {
+    const move = kingMoves[i];
+    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
+        document.querySelector(`[square-id="${move.destination}"]`), false);
+    const score = evaluateBoard();
+    createBoard(gameStates[gameStates.length - 1]);
+    listenOnSquares();
+    if (score < bestScore) {
+      bestScore = score;
+      bestMove = move;
+    }
+  }
+  console.log(bestMove);
+  return bestMove;
+}
+
+function evaluateBoard(){
+  let score = 0;
+  allBlack = document.querySelectorAll("div[color='black']");
+  allBlack.forEach(piece => {
+    switch(piece.id){
+      case 'p':
+        score -= 1;
+        break;
+      case 'r':
+        score -= 5;
+        break;
+      case 'n':
+        score -= 3;
+        break;
+      case 'b':
+        score -= 3;
+        break;
+      case 'q':
+        score -= 9;
+        break;
+    }
+  });
+  allWhite = document.querySelectorAll("div[color='white']");
+  allWhite.forEach(piece => {
+    switch(piece.id.toLowerCase()){
+      case 'p':
+        score += 1;
+        break;
+      case 'r':
+        score += 5;
+        break;
+      case 'n':
+        score += 3;
+        break;
+      case 'b':
+        score += 3;
+        break;
+      case 'q':
+        score += 9;
+        break;
+    }
+  });
+  return score;
 }
 
 
@@ -1091,6 +1145,7 @@ function listenOnSquares() {
               if(color == 'white' && opponent == "Bot")
                 document.dispatchEvent(new Event("playerMoved"));
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
+              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard()}`;
             }
           }
         }
@@ -1113,7 +1168,7 @@ document.addEventListener("playerMoved", function () {
   if (turn === 'Black') {
     let botMove = makeBotMove();
     console.log(botMove);
-    let botPiece = botMove.piece.parentNode;
+    let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
     makeMove(botPiece, botDestination, true);
     calculateChecks();
@@ -1138,5 +1193,6 @@ document.addEventListener("playerMoved", function () {
     if(turn == "Black")
       switchTurns();
     document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
+    document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard()}`;
   }
 });
