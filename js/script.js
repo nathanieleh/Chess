@@ -21,6 +21,7 @@ let allSquares = document.querySelectorAll("div.square");
 let gameOver = false;
 let moves = [];
 let checks = [];
+let pinnedPieces = new Array(64).fill(0);
 let capture = new Audio('./audio/capture.mp3');
 let castle = new Audio('./audio/castle.mp3');
 let checkmate = new Audio('./audio/game-end.webm');
@@ -183,57 +184,57 @@ function bishopMoves(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
-  let line = [];
+  let checkLine = [];
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset * 9;
     if(col + offset >= 0 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
-      line.push(allSquares[newId]);
+      checkLine.push(allSquares[newId]);
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-        line.forEach(element => checks.push(element));
+        checkLine.forEach(element => checks.push(element));
         checks.push(allSquares[id]);
       }
       if(allSquares[newId].firstChild) break;
     }
   }
-  line = [];
+  checkLine = [];
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset * 9;
     if(col + offset <= 7 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
-      line.push(allSquares[newId]);
+      checkLine.push(allSquares[newId]);
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-        line.forEach(element => checks.push(element));
+        checkLine.forEach(element => checks.push(element));
         checks.push(allSquares[id]);
       }
       if(allSquares[newId].firstChild) break;
     }
   }
-  line = [];
+  checkLine = [];
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset * 7;
     if(col - offset <= 7 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
-      line.push(allSquares[newId]);
+      checkLine.push(allSquares[newId]);
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-        line.forEach(element => checks.push(element));
+        checkLine.forEach(element => checks.push(element));
         checks.push(allSquares[id]);
       }
       if(allSquares[newId].firstChild) break;
     }
   }
-  line = [];
+  checkLine = [];
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset * 7;
     if(col - offset >= 0 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       moves.push(allSquares[newId]);
-      line.push(allSquares[newId]);
+      checkLine.push(allSquares[newId]);
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k'){
-        line.forEach(element => checks.push(element));
+        checkLine.forEach(element => checks.push(element));
         checks.push(allSquares[id]);
       }
       if(allSquares[newId].firstChild) break;
@@ -830,6 +831,91 @@ function calculateMoves(selectedPiece) {
 }
 
 /**
+ * Calculates the pinned pieces on the chessboard
+ */
+function calculatePins(){
+  pinnedPieces = new Array(64).fill(0);
+  allPieces.forEach(piece => {
+    let id = parseInt(piece.parentNode.getAttribute("square-id"));
+    let pieceType = piece.getAttribute("id").toLowerCase();
+    let color = piece.getAttribute("color");
+    console.log(pieceType, id);
+    switch (pieceType) {
+      case "r":
+        rookPins(id, color);
+        break;
+      case "b":
+        bishopPins(id, color);
+        break;
+      case "q":
+        rookPins(id, color);
+        bishopPins(id, color);
+    }
+  });
+}
+
+/**
+ * Calculates the pinned pieces from a bishop on the chessboard.
+ * 
+ * @param {number} id - The ID of the square where the bishop is located.
+ * @param {string} color - The color of the bishop piece ('white' or 'black').
+ */
+function bishopPins(id, color){
+  let pinLine = [];
+  let pinned = -1;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  let newId = 0;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset * 9;
+    if(col + offset >= 0 && row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => pinnedPieces[element] = allSquares[element]);
+        pinnedPieces[id] = allSquares[id];
+        console.log(pinnedPieces);
+      }
+      else if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k' && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+}
+
+/**
+ * Calculates the pinned pieces from a rook on the chessboard.
+ * 
+ * @param {number} id - The ID of the square where the rook is located.
+ * @param {string} color - The color of the rook piece ('white' or 'black').
+ */
+function rookPins(id, color){
+  let pinLine = [];
+  let pinned = -1;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  let newId = 0;
+  for(let offset = -1; offset > -8; offset--){
+    newId = parseInt(id + offset * 9);
+    if(col + offset >= 0 && row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => pinnedPieces[element] = allSquares[element]);
+      }
+      if(allSquares[newId].firstChild && pinned == -1)
+        pinned = newId;
+    }
+  }
+}
+
+/**
  * Changes the background color of each square in the moves array to crimson.
  */
 function colorMoves() {
@@ -1006,7 +1092,6 @@ function makeBotMove() {
 
   for (let i = 0; i < allMoves.length; i++) {
     const move = allMoves[i];
-    console.log(move.piece)
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
         document.querySelector(`[square-id="${move.destination}"]`), false);
     const score = evaluateBoard();
@@ -1017,7 +1102,6 @@ function makeBotMove() {
       bestMove = move;
     }
   }
-  console.log(bestMove);
   return bestMove;
 }
 
@@ -1135,6 +1219,12 @@ function listenOnSquares() {
         moves = [];
         selectedPiece = '';
         calculateChecks();
+        calculatePins();
+        console.log(pinnedPieces);
+        pinnedPieces.forEach(piece => {
+          if(piece != 0)
+            piece.style.backgroundColor = 'yellow';
+        });
         if(gameOver){
           setTimeout(function() {alert(`${turn} wins!`)}, 100);
         }
@@ -1156,7 +1246,7 @@ document.addEventListener("playerMoved", function () {
       while(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){
           revertMove();
           botMove = makeBotMove();
-          botPiece = botMove.piece.parentNode;
+          botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
           botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
           makeMove(botPiece, botDestination, true);
           calculateChecks();
