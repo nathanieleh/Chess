@@ -1,6 +1,6 @@
 let FENCode = startFEN;
 let gameStates = [FENCode];
-let opponent = "Bot";
+let opponent = "Player";
 createBoard(FENCode);
 
 const playerMoved = new CustomEvent("playerMoved");
@@ -1555,6 +1555,7 @@ function checkForCheckMate(){
 function makeBotMove() {
   let allMoves = [];
   let bestMove = {};
+  let bestFutureMove = {};
   let bestScore = Infinity;
   let bestOppScore = -Infinity;
   let color = 'black';
@@ -1593,7 +1594,6 @@ function makeBotMove() {
     let oppScore = -Infinity;
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
         document.querySelector(`[square-id="${move.destination}"]`), false);
-    switchTurns();
     allWhitePieces = document.querySelectorAll("div[color='white']");
     allWhitePieces.forEach(piece => {
       if(piece.id != 'K'){
@@ -1618,15 +1618,20 @@ function makeBotMove() {
     kingMoves.forEach(move => {
       futureMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
     });
+    bestOppScore = -Infinity;
     for(let j = 0; j < futureMoves.length; j++){
       const futureMove = futureMoves[j];
-      makeMove(document.querySelector(`[square-id="${futureMove.piece}"]`),
-        document.querySelector(`[square-id="${futureMove.destination}"]`));
+      if(document.querySelector(`[square-id="${futureMove.destination}"]`).firstChild?.id.toLowerCase() != 'k'){
+        makeMove(document.querySelector(`[square-id="${futureMove.piece}"]`),
+          document.querySelector(`[square-id="${futureMove.destination}"]`));
+      }
       oppScore = evaluateBoard();
+      console.log(oppScore, futureMove);
       createBoard(gameStates[gameStates.length - 1]);
       listenOnSquares();
       if(oppScore > bestOppScore){
         bestOppScore = oppScore;
+        bestFutureMove = futureMove;
       }
     }
     createBoard(gameStates[gameStates.length - 1]);
@@ -1635,8 +1640,10 @@ function makeBotMove() {
       bestScore = bestOppScore;
       bestMove = move;
     }
-    switchTurns();
+    console.log(move, bestScore, bestFutureMove);
   }
+  console.log(bestMove, bestScore);
+  console.log(bestFutureMove, bestOppScore);
   return bestMove;
 }
 
@@ -1692,43 +1699,43 @@ function evaluateBoard(){
   calculateAttacks();
   attackedPieces.forEach(piece => {
     if(piece != 0){
-      let color = piece.firstChild.color;
+      let color = piece.firstChild.getAttribute('color');
       let pieceType = piece.firstChild.id.toLowerCase();
       switch(pieceType){
         case 'p':
-          if(color == "white" && turn == 'Black')
-            score -= 1;
-          else if(color == 'black' && turn == 'White')
-            score += 1;
+          if(color == "white" && turn === 'Black')
+            score -= 1/2;
+          else if(color == 'black' && turn === 'White')
+            score += 1/2;
           break;
         case 'r':
-          if(color == "white" && turn == 'Black')
-            score -= 5;
-          else if(color == 'black' && turn == 'White')
-            score += 5;
+          if(color == "white" && turn === 'Black')
+            score -= 5/2;
+          else if(color == 'black' && turn === 'White')
+            score += 5/2;
           break;
         case 'n':
-          if(color == "white" && turn == 'Black')
-            score -= 3;
-          else if(color == 'black' && turn == 'White')
-            score -= 3;
+          if(color == "white" && turn === 'Black')
+            score -= 3/2;
+          else if(color == 'black' && turn === 'White')
+            score += 3/2;
           break;
         case 'b':
-          if(color == "white" && turn == 'Black')
-            score -= 3;
-          else if(color == 'black' && turn == 'White')
-            score -= 3;
+          if(color == "white" && turn === 'Black')
+            score -= 3/2;
+          else if(color == 'black' && turn === 'White')
+            score += 3/2;
           break;
         case 'q':
-          if(color == "white" && turn == 'Black')
-            score -= 9;
-          else if(color == 'black' && turn == 'White')
-            score -= 9;
+          if(color == "white" && turn === 'Black')
+            score -= 9/2;
+          else if(color == 'black' && turn === 'White')
+            score += 9/2;
         case 'k': 
-          if(color == "white" && turn == 'Black')
-            score -= 5;
-          else if(color == 'black' && turn == 'White')
-            score -= 5;
+          if(color == "white" && turn === 'Black')
+            score -= 5/2;
+          else if(color == 'black' && turn === 'White')
+            score += 5/2;
           break;
       }
     }
