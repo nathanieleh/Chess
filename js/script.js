@@ -1,6 +1,6 @@
 let FENCode = startFEN;
 let gameStates = [FENCode];
-let opponent = "Player";
+let opponent = "Bot";
 createBoard(FENCode);
 
 const playerMoved = new CustomEvent("playerMoved");
@@ -21,7 +21,7 @@ let allSquares = document.querySelectorAll("div.square");
 let gameOver = false;
 let moves = [];
 let checks = [];
-let pinnedPieces = new Array(64).fill(0);
+let pinnedPieces = new Array(64).fill([0,0]);
 let capture = new Audio('./audio/capture.mp3');
 let castle = new Audio('./audio/castle.mp3');
 let checkmate = new Audio('./audio/game-end.webm');
@@ -834,12 +834,11 @@ function calculateMoves(selectedPiece) {
  * Calculates the pinned pieces on the chessboard
  */
 function calculatePins(){
-  pinnedPieces = new Array(64).fill(0);
+  pinnedPieces = new Array(64).fill([0,0]);
   allPieces.forEach(piece => {
     let id = parseInt(piece.parentNode.getAttribute("square-id"));
     let pieceType = piece.getAttribute("id").toLowerCase();
     let color = piece.getAttribute("color");
-    console.log(pieceType, id);
     switch (pieceType) {
       case "r":
         rookPins(id, color);
@@ -874,11 +873,90 @@ function bishopPins(id, color){
         pinLine.push(newId);
       }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => pinnedPieces[element] = allSquares[element]);
-        pinnedPieces[id] = allSquares[id];
-        console.log(pinnedPieces);
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
       }
-      else if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k' && pinned != -1)
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset * 9;
+    if(col + offset <= 7 && row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset * 7;
+    if(col - offset <= 7 && row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset * 7;
+    if(col - offset >= 0 && row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
           break;
       if(allSquares[newId].firstChild &&
         pinned == -1)
@@ -900,17 +978,101 @@ function rookPins(id, color){
   const col = id % 8;
   let newId = 0;
   for(let offset = -1; offset > -8; offset--){
-    newId = parseInt(id + offset * 9);
-    if(col + offset >= 0 && row + offset >= 0){
+    newId = id + offset;
+    if(col + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
       if(pinned == -1){
         pinLine.push(newId);
       }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => pinnedPieces[element] = allSquares[element]);
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
       }
-      if(allSquares[newId].firstChild && pinned == -1)
-        pinned = newId;
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset;
+    if(col + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset*8;
+    if(row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset*8;
+    if(row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
     }
   }
 }
@@ -1069,9 +1231,13 @@ function makeBotMove() {
   let color = 'black';
   let allBlackPieces = document.querySelectorAll("div[color='black']");
   let allWhitePieces = document.querySelectorAll("div[color='white']");
+  calculatePins();
   allBlackPieces.forEach(piece => {
     if(piece.id != 'k'){
       let moves = calculateMoves(piece.parentNode);
+      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][0] != 0){
+        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
+      }
       moves.forEach(move => {
         if(checks.length > 0){
           if(checks.includes(move)){
@@ -1090,6 +1256,7 @@ function makeBotMove() {
     allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
   });
 
+  // all possible moves have been calculated for the position
   for (let i = 0; i < allMoves.length; i++) {
     const move = allMoves[i];
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
@@ -1126,6 +1293,7 @@ function evaluateBoard(){
         score -= 9;
         break;
     }
+    score -= calculateMoves(piece.parentNode).length * 0.1;
   });
   allWhite = document.querySelectorAll("div[color='white']");
   allWhite.forEach(piece => {
@@ -1146,6 +1314,7 @@ function evaluateBoard(){
         score += 9;
         break;
     }
+    score += calculateMoves(piece.parentNode).length * 0.1;
   });
   return score;
 }
@@ -1173,6 +1342,10 @@ function listenOnSquares() {
           teamInCheck = true;
         if(checks.length != 0 && teamInCheck && selectedPiece?.firstChild?.id.toLowerCase() != 'k'){
           moves = moves.filter(move => checks.includes(move));
+        }
+        if(pinnedPieces[parseInt(selectedPiece.getAttribute('square-id'))][0] != 0 &&
+            pinnedPieces[parseInt(selectedPiece.getAttribute('square-id'))][1] != 0){
+          moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
         }
         colorMoves();
       }
@@ -1209,7 +1382,7 @@ function listenOnSquares() {
               if(color == 'white' && opponent == "Bot")
                 document.dispatchEvent(new Event("playerMoved"));
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
-              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard()}`;
+              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard().toFixed(2)}`;
             }
           }
         }
@@ -1220,10 +1393,9 @@ function listenOnSquares() {
         selectedPiece = '';
         calculateChecks();
         calculatePins();
-        console.log(pinnedPieces);
         pinnedPieces.forEach(piece => {
-          if(piece != 0)
-            piece.style.backgroundColor = 'yellow';
+          if(piece[0] != 0)
+            piece[0].style.backgroundColor = 'yellow';
         });
         if(gameOver){
           setTimeout(function() {alert(`${turn} wins!`)}, 100);
