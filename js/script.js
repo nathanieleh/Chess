@@ -22,6 +22,7 @@ let gameOver = false;
 let moves = [];
 let checks = [];
 let pinnedPieces = new Array(64).fill([0,0]);
+let attackedPieces = new Array(64).fill(0);
 let capture = new Audio('./audio/capture.mp3');
 let castle = new Audio('./audio/castle.mp3');
 let checkmate = new Audio('./audio/game-end.webm');
@@ -127,7 +128,9 @@ function rookMoves(id, color){
         line.forEach(element => checks.push(element));
         checks.push(allSquares[id]);
       }
-      if(allSquares[newId].firstChild) break;
+      if(allSquares[newId].firstChild){
+        break;
+      }
     }
   }
   line = [];
@@ -170,6 +173,58 @@ function rookMoves(id, color){
         checks.push(allSquares[id]);
       }
       if(allSquares[newId].firstChild) break;
+    }
+  }
+}
+
+/**
+ * Calculates the possible attacks by the rook
+ * 
+ * @param {number} id - The ID of the rook square.
+ * @param {string} color - The color of the rook ('white' or 'black').
+ */
+function rookAttacks(id, color){
+  let newId = id;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset;
+    if(col + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
+    }
+  }
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset;
+    if(col + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
+    }
+  }
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset*8;
+    if(row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
+    }
+  }
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset*8;
+    if(row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
     }
   }
 }
@@ -238,6 +293,62 @@ function bishopMoves(id, color){
         checks.push(allSquares[id]);
       }
       if(allSquares[newId].firstChild) break;
+    }
+  }
+}
+
+/**
+ * Calculates the possible attacks for a bishop on the chessboard.
+ * 
+ * @param {number} id - The ID of the bishop square.
+ * @param {string} color - The color of the bishop ('white' or 'black').
+ */
+function bishopAttacks(id, color){
+  let newId = id;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  let checkLine = [];
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset * 9;
+    if(col + offset >= 0 && row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
+    }
+  }
+  checkLine = [];
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset * 9;
+    if(col + offset <= 7 && row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
+    }
+  }
+  checkLine = [];
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset * 7;
+    if(col - offset <= 7 && row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
+    }
+  }
+  checkLine = [];
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset * 7;
+    if(col - offset >= 0 && row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(allSquares[newId].firstChild){
+        attackedPieces[newId] = allSquares[newId];
+        break;
+      }
     }
   }
 }
@@ -345,6 +456,73 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
         checks.push(allSquares[newId]);
         checks.push(allSquares[id]);
       }
+    }
+  }
+}
+
+/**
+ * Calculates the possible attacks for a knight on a chessboard.
+ * @param {number} id - The current position of the knight on the chessboard.
+ * @param {string} color - The color of the knight ('white' or 'black').
+ */
+function knightAttacks(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
+  let newId = id;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  newId = id - 6;
+  if(col + 2 <= 7 && row - 1 >= 0){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id - 10;
+  if(col - 2 >= 0 && row - 1 >= 0){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id - 15;
+  if(col + 1 <= 7 && row - 2 >= 0){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id - 17;
+  if(col - 1 >= 0 && row - 2 >= 0){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 6;
+  if(col - 2 >= 0 && row + 1 <= 7){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 10;
+  if(col + 2 <= 7 && row + 1 <= 7){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 15;
+  if(col - 1 >= 0 && row + 2 <= 7){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 17;
+  if(col + 1 <= 7 && row + 2 <= 7){
+    if(allSquares[newId].firstChild &&
+        allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
     }
   }
 }
@@ -660,6 +838,67 @@ function kingMoves(id, color){
 }
 
 /**
+ * Calculates the possible attacks for a king piece on the chessboard.
+ * 
+ * @param {number} id - The ID of the square where the king is located.
+ * @param {string} color - The color of the king piece ('white' or 'black').
+ */
+function kingAttacks(id, color){
+  let newId = id;
+  let tempMoves = moves;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  newId = id - 1;
+  if(col - 1 >= 0){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 1;
+  if(col + 1 <= 7){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id - 8;
+  if(row - 1 >= 0){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 8;
+  if(row + 1 <= 7){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 9;
+  if(col + 1 <= 7 && row + 1 <= 7){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id + 7;
+  if(col - 1 >= 0 && row + 1 <= 7){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id - 7;
+  if(col + 1 <= 7 && row - 1 >= 0){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+  newId = id - 9;
+  if(col - 1 >= 0 && row - 1 >= 0){
+    if(allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+      attackedPieces[newId] = allSquares[newId];
+    }
+  }
+}
+
+/**
  * Helper function to check if king position at "to" is valid.
  * 
  * @param {HTMLElement} from - The original king position.
@@ -794,6 +1033,62 @@ function pawnMoves(id, color){
 }
 
 /**
+ * Calculates the possible attacks for a pawn on the chessboard.
+ * 
+ * @param {number} id - The ID of the pawn.
+ * @param {string} color - The color of the pawn ('white' or 'black').
+ */
+function pawnAttacks(id, color){
+  let newId = id;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  switch(color) {
+    case "white":
+      // checks if there is a piece on its diagonals or en passant
+      newId = id - 7;
+      if(col + 1 <= 7 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+        attackedPieces[newId] = allSquares[newId];
+      }
+      if(col + 1 <= 7 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
+        allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
+        allSquares[id + 1].firstChild.getAttribute("color") != color){
+          attackedPieces[id + 1] = allSquares[id + 1];
+      }
+      newId = id - 9;
+      if(col - 1 >= 0 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+        attackedPieces[newId] = allSquares[newId];
+      }
+      if(col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
+        allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
+        allSquares[id - 1].firstChild.getAttribute("color") != color){
+          attackedPieces[id - 1] = allSquares[id - 1];
+      }
+      break;
+    case "black":
+      // checks if there is a piece on its diagonals or en passant
+      newId = id + 7;
+      if(col - 1 >= 0 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+        attackedPieces[newId] = allSquares[newId];
+      }
+      if(col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
+        allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
+        allSquares[id - 1].firstChild.getAttribute("color") != color){
+          attackedPieces[id - 1] = allSquares[id - 1];
+      }
+      newId = id + 9;
+      if(col + 1 <= 7 && allSquares[newId].firstChild && allSquares[newId].firstChild.getAttribute("color") != color){
+        attackedPieces[newId] = allSquares[newId];
+      }
+      if(col + 1 <= 7 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
+        allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
+        allSquares[id + 1].firstChild.getAttribute("color") != color){
+          attackedPieces[id + 1] = allSquares[id + 1];
+      }
+      break;
+  }
+}
+
+/**
  * Calculates the possible moves for a selected chess piece.
  * @param {HTMLElement} selectedPiece - The selected chess piece.
  * @returns {Array} - An array of possible moves for the selected piece.
@@ -849,6 +1144,39 @@ function calculatePins(){
       case "q":
         rookPins(id, color);
         bishopPins(id, color);
+    }
+  });
+}
+
+/**
+ * Calculates attacked pieces on the chessboard
+ */
+function calculateAttacks(){
+  attackedPieces = new Array(64).fill(0);
+  allPieces.forEach(piece => {
+    let id = parseInt(piece.parentNode.getAttribute("square-id"));
+    let pieceType = piece.getAttribute("id").toLowerCase();
+    let color = piece.getAttribute("color");
+    switch (pieceType) {
+      case "r":
+        rookAttacks(id, color);
+        break;
+      case "b":
+        bishopAttacks(id, color);
+        break;
+      case "q":
+        rookAttacks(id, color);
+        bishopAttacks(id, color);
+        break;
+      case "n":
+        knightAttacks(id, color);
+        break;
+      case "k":
+        kingAttacks(id, color);
+        break;
+      case "p":
+        pawnAttacks(id, color);
+        break;
     }
   });
 }
@@ -1228,6 +1556,7 @@ function makeBotMove() {
   let allMoves = [];
   let bestMove = {};
   let bestScore = Infinity;
+  let bestOppScore = -Infinity;
   let color = 'black';
   let allBlackPieces = document.querySelectorAll("div[color='black']");
   let allWhitePieces = document.querySelectorAll("div[color='white']");
@@ -1256,22 +1585,66 @@ function makeBotMove() {
     allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
   });
 
-  // all possible moves have been calculated for the position
+  // all possible moves have been calculated for the bot's position
+  // now sift through all future moves and find the best result
   for (let i = 0; i < allMoves.length; i++) {
     const move = allMoves[i];
+    let futureMoves = [];
+    let oppScore = -Infinity;
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
         document.querySelector(`[square-id="${move.destination}"]`), false);
-    const score = evaluateBoard();
+    switchTurns();
+    allWhitePieces = document.querySelectorAll("div[color='white']");
+    allWhitePieces.forEach(piece => {
+      if(piece.id != 'K'){
+        let moves = calculateMoves(piece.parentNode);
+        if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][0] != 0){
+          moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
+        }
+        moves.forEach(move => {
+          if(checks.length > 0){
+            if(checks.includes(move)){
+              futureMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
+            }
+          }
+          else{
+            futureMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
+          }
+        });
+      }
+    });
+    let kingMoves = calculateMoves(document.getElementById('K').parentNode);
+    let kingPosition = document.getElementById('K').parentNode.getAttribute("square-id");
+    kingMoves.forEach(move => {
+      futureMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
+    });
+    for(let j = 0; j < futureMoves.length; j++){
+      const futureMove = futureMoves[j];
+      makeMove(document.querySelector(`[square-id="${futureMove.piece}"]`),
+        document.querySelector(`[square-id="${futureMove.destination}"]`));
+      oppScore = evaluateBoard();
+      createBoard(gameStates[gameStates.length - 1]);
+      listenOnSquares();
+      if(oppScore > bestOppScore){
+        bestOppScore = oppScore;
+      }
+    }
     createBoard(gameStates[gameStates.length - 1]);
     listenOnSquares();
-    if (score < bestScore) {
-      bestScore = score;
+    if (bestOppScore < bestScore) {
+      bestScore = bestOppScore;
       bestMove = move;
     }
+    switchTurns();
   }
   return bestMove;
 }
 
+/**
+ * Calculates the evaluation of the current board for the bot to consider
+ * 
+ * @returns the score of the current position
+ */
 function evaluateBoard(){
   let score = 0;
   allBlack = document.querySelectorAll("div[color='black']");
@@ -1315,6 +1688,50 @@ function evaluateBoard(){
         break;
     }
     score += calculateMoves(piece.parentNode).length * 0.1;
+  });
+  calculateAttacks();
+  attackedPieces.forEach(piece => {
+    if(piece != 0){
+      let color = piece.firstChild.color;
+      let pieceType = piece.firstChild.id.toLowerCase();
+      switch(pieceType){
+        case 'p':
+          if(color == "white" && turn == 'Black')
+            score -= 1;
+          else if(color == 'black' && turn == 'White')
+            score += 1;
+          break;
+        case 'r':
+          if(color == "white" && turn == 'Black')
+            score -= 5;
+          else if(color == 'black' && turn == 'White')
+            score += 5;
+          break;
+        case 'n':
+          if(color == "white" && turn == 'Black')
+            score -= 3;
+          else if(color == 'black' && turn == 'White')
+            score -= 3;
+          break;
+        case 'b':
+          if(color == "white" && turn == 'Black')
+            score -= 3;
+          else if(color == 'black' && turn == 'White')
+            score -= 3;
+          break;
+        case 'q':
+          if(color == "white" && turn == 'Black')
+            score -= 9;
+          else if(color == 'black' && turn == 'White')
+            score -= 9;
+        case 'k': 
+          if(color == "white" && turn == 'Black')
+            score -= 5;
+          else if(color == 'black' && turn == 'White')
+            score -= 5;
+          break;
+      }
+    }
   });
   return score;
 }
@@ -1413,26 +1830,14 @@ document.addEventListener("playerMoved", function () {
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
     makeMove(botPiece, botDestination, true);
     calculateChecks();
-    // deals with pinned pieces
-    if(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){  
-      while(document.getElementById("k").parentNode.style.backgroundColor == 'orange'){
-          revertMove();
-          botMove = makeBotMove();
-          botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
-          botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-          makeMove(botPiece, botDestination, true);
-          calculateChecks();
-        }
-    }
-    else if(checks.length > 0 && (gameOver = checkForCheckMate())){
+    if(checks.length > 0 && (gameOver = checkForCheckMate())){
       checkmate.play();
     }
     else if(checks.length > 0)
       check.play();
     else
       oppMove.play();
-    if(turn == "Black")
-      switchTurns();
+    switchTurns();
     document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
     document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard()}`;
   }
