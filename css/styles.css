@@ -1,7 +1,7 @@
 body {
   background-color: gray;
 }
-#button {
+.playerChoice {
   border-radius: 1rem;
   background-color: deepskyblue;
 }

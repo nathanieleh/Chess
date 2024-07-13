@@ -1,14 +1,29 @@
 let FENCode = startFEN;
 let gameStates = [FENCode];
-let opponent = "Player";
+let playerWhite = "Player";
+let playerBlack = "Player";
+let moveDelay = 50;
 createBoard(FENCode);
 
 const playerMoved = new CustomEvent("playerMoved");
-const button = document.getElementById('button');
-button.innerHTML = `Click to Change Opponent: ${opponent}`;
-button.addEventListener("click", function () {
-  opponent == "Bot" ? opponent = "Player" : opponent = "Bot";
-  button.innerHTML = `Click to Change Opponent: ${opponent}`;
+const buttonWhite = document.getElementById('buttonWhite');
+const buttonBlack = document.getElementById('buttonBlack');
+const buttonStart = document.getElementById('buttonStart');
+buttonWhite.innerHTML = `Click to Change White: ${playerWhite}`;
+buttonWhite.addEventListener("click", function () {
+  playerWhite == "Bot" ? playerWhite = "Player" : playerWhite = "Bot";
+  buttonWhite.innerHTML = `Click to Change White: ${playerWhite}`;
+});
+
+buttonBlack.innerHTML = `Click to Change Black: ${playerBlack}`;
+buttonBlack.addEventListener("click", function () {
+  playerBlack == "Bot" ? playerBlack = "Player" : playerBlack = "Bot";
+  buttonBlack.innerHTML = `Click to Change Black: ${playerBlack}`;
+});
+
+buttonStart.addEventListener("click", function () {
+  if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
+    document.dispatchEvent(new Event("playerMoved"));
 });
 
 let turn = 'White';
@@ -1130,6 +1145,7 @@ function calculateMoves(selectedPiece) {
  */
 function calculatePins(){
   pinnedPieces = new Array(64).fill([0,0]);
+  allPieces = document.querySelectorAll(".piece");
   allPieces.forEach(piece => {
     let id = parseInt(piece.parentNode.getAttribute("square-id"));
     let pieceType = piece.getAttribute("id").toLowerCase();
@@ -1520,50 +1536,72 @@ function animateInvalidMove(color) {
  */
 function checkForCheckMate(){
   let possibleMoves = [];
-  if(turn.toLowerCase() == 'white'){
-    let blackKing = document.getElementById("k");
-    allBlack.forEach(piece => {
-      let checkMoves = calculateMoves(piece.parentNode);
-      checkMoves.forEach(move => possibleMoves.push(move));
-    });
-    possibleMoves = possibleMoves.filter(move => checks.includes(move));
-    if(possibleMoves.length == 0){
-      possibleMoves = calculateMoves(blackKing.parentNode);
-      return possibleMoves.length == 0;
-    }
-  }
-  if(turn.toLowerCase() == 'black'){
-    let whiteKing = document.getElementById("K");
-    allWhite.forEach(piece => {
-      let checkMoves = calculateMoves(piece.parentNode);
-      checkMoves.forEach(move => possibleMoves.push(move));
-    });
-    possibleMoves = possibleMoves.filter(move => checks.includes(move));
-    if(possibleMoves.length == 0){
-      possibleMoves = calculateMoves(whiteKing.parentNode);
-      return possibleMoves.length == 0;
-    }
-  }
-  return false;
+  let color = '';
+  turn.toLowerCase() == 'white' ? color = 'black' : color = 'white';
+  possibleMoves = calculateColorMoves(color);
+  return possibleMoves.length == 0;
 }
 
 /**
  * Makes a move for the bot player.
+ * @param {string} botColor - the turn which tells which color the bot needs to make the move for
  * @returns {Object} The move object containing the piece and destination.
  */
 // TODO: Implement the minimax algorithm for the bot to play against human players
-function makeBotMove() {
+function makeBotMove(botColor) {
   let allMoves = [];
   let bestMove = {};
   let bestFutureMove = {};
   let bestScore = Infinity;
   let bestOppScore = -Infinity;
-  let color = 'black';
-  let allBlackPieces = document.querySelectorAll("div[color='black']");
-  let allWhitePieces = document.querySelectorAll("div[color='white']");
+  allMoves = calculateColorMoves(botColor);
+
+  // all possible moves have been calculated for the bot's position
+  // now sift through all future moves and find the best result
+  for (let i = 0; i < allMoves.length; i++) {
+    const move = allMoves[i];
+    let futureMoves = [];
+    let oppScore = -Infinity;
+    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
+        document.querySelector(`[square-id="${move.destination}"]`), false);
+    futureMoves = calculateColorMoves(botColor == "Black" ? "White" : "Black");
+    bestOppScore = -Infinity;
+    for(let j = 0; j < futureMoves.length; j++){
+      const futureMove = futureMoves[j];
+      if(document.querySelector(`[square-id="${futureMove.destination}"]`).firstChild?.id.toLowerCase() != 'k'){
+        makeMove(document.querySelector(`[square-id="${futureMove.piece}"]`),
+          document.querySelector(`[square-id="${futureMove.destination}"]`));
+      }
+      oppScore = evaluateBoard();
+      createBoard(gameStates[gameStates.length - 1]);
+      listenOnSquares();
+      if(oppScore > bestOppScore){
+        bestOppScore = oppScore;
+        bestFutureMove = futureMove;
+      }
+    }
+    createBoard(gameStates[gameStates.length - 1]);
+    listenOnSquares();
+    if (bestOppScore < bestScore) {
+      bestScore = bestOppScore;
+      bestMove = move;
+    }
+  }
+  return bestMove;
+}
+
+/**
+ * Calculates all possible moves for the given color
+ * @param color - the color of the pieces to calculate
+ * 
+ * @returns a list of all possible moves for the color
+ */
+function calculateColorMoves(color){
+  let allMoves = [];
+  let allColorPieces = document.querySelectorAll(`div[color='${color.toLowerCase()}']`);
   calculatePins();
-  allBlackPieces.forEach(piece => {
-    if(piece.id != 'k'){
+  allColorPieces.forEach(piece => {
+    if(piece.id.toLowerCase() != 'k'){
       let moves = calculateMoves(piece.parentNode);
       if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][0] != 0){
         moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
@@ -1580,71 +1618,14 @@ function makeBotMove() {
       });
     }
   });
-  let kingMoves = calculateMoves(document.getElementById('k').parentNode);
-  let kingPosition = document.getElementById('k').parentNode.getAttribute("square-id");
+  let kingPiece = '';
+  color.toLowerCase() == 'white' ? kingPiece = 'K' : kingPiece = 'k';
+  let kingMoves = calculateMoves(document.getElementById(kingPiece).parentNode);
+  let kingPosition = document.getElementById(kingPiece).parentNode.getAttribute("square-id");
   kingMoves.forEach(move => {
     allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
   });
-
-  // all possible moves have been calculated for the bot's position
-  // now sift through all future moves and find the best result
-  for (let i = 0; i < allMoves.length; i++) {
-    const move = allMoves[i];
-    let futureMoves = [];
-    let oppScore = -Infinity;
-    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
-        document.querySelector(`[square-id="${move.destination}"]`), false);
-    allWhitePieces = document.querySelectorAll("div[color='white']");
-    allWhitePieces.forEach(piece => {
-      if(piece.id != 'K'){
-        let moves = calculateMoves(piece.parentNode);
-        if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][0] != 0){
-          moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
-        }
-        moves.forEach(move => {
-          if(checks.length > 0){
-            if(checks.includes(move)){
-              futureMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
-            }
-          }
-          else{
-            futureMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
-          }
-        });
-      }
-    });
-    let kingMoves = calculateMoves(document.getElementById('K').parentNode);
-    let kingPosition = document.getElementById('K').parentNode.getAttribute("square-id");
-    kingMoves.forEach(move => {
-      futureMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
-    });
-    bestOppScore = -Infinity;
-    for(let j = 0; j < futureMoves.length; j++){
-      const futureMove = futureMoves[j];
-      if(document.querySelector(`[square-id="${futureMove.destination}"]`).firstChild?.id.toLowerCase() != 'k'){
-        makeMove(document.querySelector(`[square-id="${futureMove.piece}"]`),
-          document.querySelector(`[square-id="${futureMove.destination}"]`));
-      }
-      oppScore = evaluateBoard();
-      console.log(oppScore, futureMove);
-      createBoard(gameStates[gameStates.length - 1]);
-      listenOnSquares();
-      if(oppScore > bestOppScore){
-        bestOppScore = oppScore;
-        bestFutureMove = futureMove;
-      }
-    }
-    createBoard(gameStates[gameStates.length - 1]);
-    listenOnSquares();
-    if (bestOppScore < bestScore) {
-      bestScore = bestOppScore;
-      bestMove = move;
-    }
-    console.log(move, bestScore, bestFutureMove);
-  }
-  console.log(bestMove, bestScore);
-  console.log(bestFutureMove, bestOppScore);
-  return bestMove;
+  return allMoves;
 }
 
 /**
@@ -1748,6 +1729,7 @@ function evaluateBoard(){
  * Listens for click events on the chess squares and handles the logic for selecting and moving pieces.
  */
 function listenOnSquares() {
+  let draw = false;
   allSquares = document.querySelectorAll("div.square");
   allSquares.forEach(square => {
     square.addEventListener("click", function (e) {
@@ -1795,6 +1777,10 @@ function listenOnSquares() {
             else if(checks.length > 0 && (gameOver = checkForCheckMate())){
               checkmate.play();
             }
+            else if(gameOver = checkForCheckMate()){
+              scatter.play();
+              draw = true;
+            }
             else if(checks.length > 0)
               check.play();
             else if(pieces != allPieces.length)
@@ -1803,8 +1789,8 @@ function listenOnSquares() {
               color == 'white' ? selfMove.play() : oppMove.play();
             if(!gameOver){
               switchTurns();
-              if(color == 'white' && opponent == "Bot")
-                document.dispatchEvent(new Event("playerMoved"));
+              if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
+                setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
               document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard().toFixed(2)}`;
             }
@@ -1821,7 +1807,14 @@ function listenOnSquares() {
           if(piece[0] != 0)
             piece[0].style.backgroundColor = 'yellow';
         });
-        if(gameOver){
+        if(draw){
+          document.getElementById('turn').innerHTML = `It's a Draw!`;
+          document.getElementById('turn').style.fontSize = '30px';
+          setTimeout(function() {alert(`It's a Draw!`)}, 100);
+        }
+        if(!draw && gameOver){
+          document.getElementById('turn').innerHTML = `${turn} Wins!`;
+          document.getElementById('turn').style.fontSize = '30px';
           setTimeout(function() {alert(`${turn} wins!`)}, 100);
         }
       }
@@ -1831,21 +1824,51 @@ function listenOnSquares() {
 listenOnSquares();
 
 document.addEventListener("playerMoved", function () {
-  if (turn === 'Black') {
-    let botMove = makeBotMove();
-    let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
-    let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-    makeMove(botPiece, botDestination, true);
-    calculateChecks();
-    if(checks.length > 0 && (gameOver = checkForCheckMate())){
-      checkmate.play();
-    }
-    else if(checks.length > 0)
-      check.play();
-    else
-      oppMove.play();
+  let draw = false;
+  let pieces = allPieces.length;
+  let botMove = makeBotMove(turn);
+  let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
+  let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
+  makeMove(botPiece, botDestination, true);
+  calculateChecks();
+  if(checks.length > 0 && (gameOver = checkForCheckMate())){
+    checkmate.play();
+  }
+  else if(gameOver = checkForCheckMate()){
+    scatter.play();
+    draw = true;
+  }
+  else if(checks.length > 0)
+    check.play();
+  else if(pieces != allPieces.length)
+    capture.play();
+  else
+    turn.toLowerCase() == 'white' ? selfMove.play() : oppMove.play();
+  if(!gameOver){
     switchTurns();
+    if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
+      setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
     document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
-    document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard()}`;
+    document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard().toFixed(2)}`;
+  }
+  allSquares.forEach(square => {
+    square.style.backgroundColor = '';
+  });
+  moves = [];
+  selectedPiece = '';
+  calculateChecks();
+  calculatePins();
+  pinnedPieces.forEach(piece => {
+    if(piece[0] != 0)
+      piece[0].style.backgroundColor = 'yellow';
+  });
+  if(draw){
+    document.getElementById('turn').innerHTML = `It's a Draw!`;
+    document.getElementById('turn').style.fontSize = '30px';
+    setTimeout(function() {alert(`It's a Draw!`)}, 100);
+  }
+  if(!draw && gameOver){
+    document.getElementById('turn').innerHTML = `${turn} Wins!`;
+    setTimeout(function() {alert(`${turn} wins!`)}, 100);
   }
 });
