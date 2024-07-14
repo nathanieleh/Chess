@@ -1552,68 +1552,68 @@ function checkForCheckMate(){
 function makeBotMove(botColor) {
   let allMoves = [];
   let bestMove = {};
-  let bestFutureMove = {};
   let bestScore = Infinity;
-  let bestOppScore = -Infinity;
+  let bestOppScore = Infinity;
   allMoves = calculateColorMoves(botColor);
 
   // all possible moves have been calculated for the bot's position
   // now sift through all future moves and find the best result
   for (let i = 0; i < allMoves.length; i++) {
     const move = allMoves[i];
-    let futureMoves = [];
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
     document.querySelector(`[square-id="${move.destination}"]`), false);
+    console.log("possible move", move);
     switchTurns();
-    let oppScore = searchMoves(2, 0, 0);
-    bestOppScore = -Infinity;
-    for(let j = 0; j < futureMoves.length; j++){
-      const futureMove = futureMoves[j];
-      if(document.querySelector(`[square-id="${futureMove.destination}"]`).firstChild?.id.toLowerCase() != 'k'){
-        makeMove(document.querySelector(`[square-id="${futureMove.piece}"]`),
-          document.querySelector(`[square-id="${futureMove.destination}"]`));
-      }
-      oppScore = evaluateBoard(botColor);
-      createBoard(gameStates[gameStates.length - 1]);
-      listenOnSquares();
-      if(oppScore > bestOppScore){
-        bestOppScore = oppScore;
-        bestFutureMove = futureMove;
-      }
-    }
+    let oppScore = searchMoves(1, -Infinity, Infinity);
+    switchTurns();
+    console.log(oppScore, 'opponent Score');
     createBoard(gameStates[gameStates.length - 1]);
     listenOnSquares();
-    if (bestOppScore < bestScore) {
+    if (oppScore < bestOppScore) {
       bestScore = bestOppScore;
       bestMove = move;
+      console.log('bestMove', bestMove);
     }
   }
   return bestMove;
 }
 
+
+/**
+ * Searches for the best moves using the minimax algorithm with alpha-beta pruning.
+ * @param {number} depth - The depth of the search tree.
+ * @param {number} alpha - The alpha value for alpha-beta pruning.
+ * @param {number} beta - The beta value for alpha-beta pruning.
+ * @returns {number} - The best score found.
+ */
 function searchMoves(depth, alpha, beta){
   let allMoves = [];
   let bestScore = -Infinity;
   let score = 0;
-  if(depth == 0)
-      return evaluateBoard(turn);
+  if(depth == 0){
+    return evaluateBoard(turn);
+  }
   allMoves = calculateColorMoves(turn);
   for(let i = 0; i < allMoves.length; i++){
     let move = allMoves[i];
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
       document.querySelector(`[square-id="${move.destination}"]`), false);
-    score = -searchMoves(depth - 1, -beta, -alpha);
-    if(score >= beta){
-      return beta;
-    }
-    if(score > bestScore){
-      bestScore = score;
-    }
     createBoard(gameStates[gameStates.length - 1]);
     listenOnSquares();
+    switchTurns();
+    score = -searchMoves(depth - 1, -beta, -alpha);
+    switchTurns();
+    if(score > bestScore){
+      bestScore = score;
+      if(bestScore > alpha){
+        alpha = bestScore;
+      }
+    }
+    if(bestScore >= beta){
+      break;
+    }
   }
-  return bestMove;
-
+  return bestScore;
 }
 
 /**
@@ -1663,7 +1663,7 @@ function calculateColorMoves(color){
 function evaluateBoard(color){
   let playerPerspective = 1;
   if(color.toLowerCase() == 'black')
-    playerEval = -1;
+    playerPerspective = -1;
   let score = 0;
   score += countPieceVal('white') - countPieceVal('black');
   return score * playerPerspective;
@@ -1829,6 +1829,7 @@ document.addEventListener("playerMoved", function () {
   let botMove = makeBotMove(turn);
   let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
   let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
+  console.log(botPiece, botDestination);
   makeMove(botPiece, botDestination, true);
   calculateChecks();
   if(checks.length > 0 && (gameOver = checkForCheckMate())){
