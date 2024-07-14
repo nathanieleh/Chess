@@ -1530,6 +1530,7 @@ function animateInvalidMove(color) {
   }
 }
 
+//! might need to modify
 /**
  * Checks if the current game state is a checkmate.
  * @returns {boolean} Returns true if the game state is a checkmate, false otherwise.
@@ -1561,10 +1562,10 @@ function makeBotMove(botColor) {
   for (let i = 0; i < allMoves.length; i++) {
     const move = allMoves[i];
     let futureMoves = [];
-    let oppScore = -Infinity;
     makeMove(document.querySelector(`[square-id="${move.piece}"]`),
-        document.querySelector(`[square-id="${move.destination}"]`), false);
-    futureMoves = calculateColorMoves(botColor == "Black" ? "White" : "Black");
+    document.querySelector(`[square-id="${move.destination}"]`), false);
+    switchTurns();
+    let oppScore = searchMoves(2, 0, 0);
     bestOppScore = -Infinity;
     for(let j = 0; j < futureMoves.length; j++){
       const futureMove = futureMoves[j];
@@ -1572,7 +1573,7 @@ function makeBotMove(botColor) {
         makeMove(document.querySelector(`[square-id="${futureMove.piece}"]`),
           document.querySelector(`[square-id="${futureMove.destination}"]`));
       }
-      oppScore = evaluateBoard();
+      oppScore = evaluateBoard(botColor);
       createBoard(gameStates[gameStates.length - 1]);
       listenOnSquares();
       if(oppScore > bestOppScore){
@@ -1588,6 +1589,31 @@ function makeBotMove(botColor) {
     }
   }
   return bestMove;
+}
+
+function searchMoves(depth, alpha, beta){
+  let allMoves = [];
+  let bestScore = -Infinity;
+  let score = 0;
+  if(depth == 0)
+      return evaluateBoard(turn);
+  allMoves = calculateColorMoves(turn);
+  for(let i = 0; i < allMoves.length; i++){
+    let move = allMoves[i];
+    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
+      document.querySelector(`[square-id="${move.destination}"]`), false);
+    score = -searchMoves(depth - 1, -beta, -alpha);
+    if(score >= beta){
+      return beta;
+    }
+    if(score > bestScore){
+      bestScore = score;
+    }
+    createBoard(gameStates[gameStates.length - 1]);
+    listenOnSquares();
+  }
+  return bestMove;
+
 }
 
 /**
@@ -1630,97 +1656,71 @@ function calculateColorMoves(color){
 
 /**
  * Calculates the evaluation of the current board for the bot to consider
+ * @param color determines whether or not the evaluation should be for the white player or black player
  * 
  * @returns the score of the current position
  */
-function evaluateBoard(){
+function evaluateBoard(color){
+  let playerPerspective = 1;
+  if(color.toLowerCase() == 'black')
+    playerEval = -1;
   let score = 0;
-  allBlack = document.querySelectorAll("div[color='black']");
-  allBlack.forEach(piece => {
-    switch(piece.id){
-      case 'p':
-        score -= 1;
-        break;
-      case 'r':
-        score -= 5;
-        break;
-      case 'n':
-        score -= 3;
-        break;
-      case 'b':
-        score -= 3;
-        break;
-      case 'q':
-        score -= 9;
-        break;
-    }
-    score -= calculateMoves(piece.parentNode).length * 0.1;
-  });
-  allWhite = document.querySelectorAll("div[color='white']");
-  allWhite.forEach(piece => {
-    switch(piece.id.toLowerCase()){
-      case 'p':
-        score += 1;
-        break;
-      case 'r':
-        score += 5;
-        break;
-      case 'n':
-        score += 3;
-        break;
-      case 'b':
-        score += 3;
-        break;
-      case 'q':
-        score += 9;
-        break;
-    }
-    score += calculateMoves(piece.parentNode).length * 0.1;
-  });
-  calculateAttacks();
-  attackedPieces.forEach(piece => {
-    if(piece != 0){
-      let color = piece.firstChild.getAttribute('color');
-      let pieceType = piece.firstChild.id.toLowerCase();
-      switch(pieceType){
+  score += countPieceVal('white') - countPieceVal('black');
+  return score * playerPerspective;
+}
+
+
+/**
+ * Calculates the total value of pieces for a given color.
+ * @param {string} color - The color of the pieces ('black' or 'white').
+ * @returns {number} - The total value of the pieces.
+ */
+function countPieceVal(color){
+  let score = 0;
+  if(color.toLowerCase() == 'black'){
+    allBlack = document.querySelectorAll("div[color='black']");
+    allBlack.forEach(piece => {
+      switch(piece.id){
         case 'p':
-          if(color == "white" && turn === 'Black')
-            score -= 1/2;
-          else if(color == 'black' && turn === 'White')
-            score += 1/2;
+          score += 1;
           break;
         case 'r':
-          if(color == "white" && turn === 'Black')
-            score -= 5/2;
-          else if(color == 'black' && turn === 'White')
-            score += 5/2;
+          score += 5;
           break;
         case 'n':
-          if(color == "white" && turn === 'Black')
-            score -= 3/2;
-          else if(color == 'black' && turn === 'White')
-            score += 3/2;
+          score += 3;
           break;
         case 'b':
-          if(color == "white" && turn === 'Black')
-            score -= 3/2;
-          else if(color == 'black' && turn === 'White')
-            score += 3/2;
+          score += 3;
           break;
         case 'q':
-          if(color == "white" && turn === 'Black')
-            score -= 9/2;
-          else if(color == 'black' && turn === 'White')
-            score += 9/2;
-        case 'k': 
-          if(color == "white" && turn === 'Black')
-            score -= 5/2;
-          else if(color == 'black' && turn === 'White')
-            score += 5/2;
+          score += 9;
           break;
       }
-    }
-  });
+    });
+  }
+  else {
+    allWhite = document.querySelectorAll("div[color='white']");
+    allWhite.forEach(piece => {
+      switch(piece.id.toLowerCase()){
+        case 'p':
+          score += 1;
+          break;
+        case 'r':
+          score += 5;
+          break;
+        case 'n':
+          score += 3;
+          break;
+        case 'b':
+          score += 3;
+          break;
+        case 'q':
+          score += 9;
+          break;
+      }
+    });
+  }
   return score;
 }
 
@@ -1792,7 +1792,7 @@ function listenOnSquares() {
               if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
                 setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
               document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
-              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard().toFixed(2)}`;
+              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
             }
           }
         }
@@ -1849,7 +1849,7 @@ document.addEventListener("playerMoved", function () {
     if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
       setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
     document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
-    document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard().toFixed(2)}`;
+    document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
   }
   allSquares.forEach(square => {
     square.style.backgroundColor = '';
