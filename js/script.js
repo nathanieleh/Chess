@@ -1552,27 +1552,27 @@ function checkForCheckMate(){
 function makeBotMove(botColor) {
   let allMoves = [];
   let bestMove = {};
-  let bestScore = Infinity;
-  let bestOppScore = Infinity;
+  let bestMinOppScore = Infinity;
   allMoves = calculateColorMoves(botColor);
 
   // all possible moves have been calculated for the bot's position
   // now sift through all future moves and find the best result
   for (let i = 0; i < allMoves.length; i++) {
     const move = allMoves[i];
-    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
-    document.querySelector(`[square-id="${move.destination}"]`), false);
-    console.log("possible move", move);
+    let piece = document.querySelector(`[square-id="${move.piece}"]`);
+    let destination = document.querySelector(`[square-id="${move.destination}"]`);
+    makeMove(piece, destination, false);
+    gameStates.push(updateFEN());
+    console.log(move, updateFEN());
     switchTurns();
     let oppScore = searchMoves(1, -Infinity, Infinity);
     switchTurns();
-    console.log(oppScore, 'opponent Score');
+    gameStates.pop();
     createBoard(gameStates[gameStates.length - 1]);
     listenOnSquares();
-    if (oppScore < bestOppScore) {
-      bestScore = bestOppScore;
+    if (oppScore < bestMinOppScore) {
+      bestMinOppScore = oppScore;
       bestMove = move;
-      console.log('bestMove', bestMove);
     }
   }
   return bestMove;
@@ -1580,7 +1580,7 @@ function makeBotMove(botColor) {
 
 
 /**
- * Searches for the best moves using the minimax algorithm with alpha-beta pruning.
+ * Searches for the best score using the minimax algorithm with alpha-beta pruning.
  * @param {number} depth - The depth of the search tree.
  * @param {number} alpha - The alpha value for alpha-beta pruning.
  * @param {number} beta - The beta value for alpha-beta pruning.
@@ -1588,7 +1588,6 @@ function makeBotMove(botColor) {
  */
 function searchMoves(depth, alpha, beta){
   let allMoves = [];
-  let bestScore = -Infinity;
   let score = 0;
   if(depth == 0){
     return evaluateBoard(turn);
@@ -1596,24 +1595,26 @@ function searchMoves(depth, alpha, beta){
   allMoves = calculateColorMoves(turn);
   for(let i = 0; i < allMoves.length; i++){
     let move = allMoves[i];
-    makeMove(document.querySelector(`[square-id="${move.piece}"]`),
-      document.querySelector(`[square-id="${move.destination}"]`), false);
-    createBoard(gameStates[gameStates.length - 1]);
-    listenOnSquares();
+    let piece = document.querySelector(`[square-id="${move.piece}"]`);
+    let destination = document.querySelector(`[square-id="${move.destination}"]`);
+    makeMove(piece, destination, false);
+    console.log(move);
+    gameStates.push(updateFEN());
     switchTurns();
     score = -searchMoves(depth - 1, -beta, -alpha);
     switchTurns();
-    if(score > bestScore){
-      bestScore = score;
-      if(bestScore > alpha){
-        alpha = bestScore;
-      }
+    gameStates.pop();
+    createBoard(gameStates[gameStates.length - 1]);
+    listenOnSquares();
+    if(score >= beta){
+      console.log("snip");
+      return beta;
     }
-    if(bestScore >= beta){
-      break;
+    if(score > alpha){
+      alpha = score;
     }
   }
-  return bestScore;
+  return alpha;
 }
 
 /**
@@ -1697,6 +1698,7 @@ function countPieceVal(color){
           score += 9;
           break;
       }
+      score += calculateMoves(piece.parentNode).length * 0.1;
     });
   }
   else {
@@ -1719,6 +1721,7 @@ function countPieceVal(color){
           score += 9;
           break;
       }
+      score += calculateMoves(piece.parentNode).length * 0.1;
     });
   }
   return score;
@@ -1829,7 +1832,6 @@ document.addEventListener("playerMoved", function () {
   let botMove = makeBotMove(turn);
   let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
   let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-  console.log(botPiece, botDestination);
   makeMove(botPiece, botDestination, true);
   calculateChecks();
   if(checks.length > 0 && (gameOver = checkForCheckMate())){
