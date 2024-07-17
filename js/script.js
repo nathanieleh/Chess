@@ -5,6 +5,34 @@ let playerBlack = "Player";
 let moveDelay = 50;
 createBoard(FENCode);
 
+const openings = [
+  { value: startFEN, text: 'New Game' },
+  { value: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR', text: 'Sicilian Defense' },
+  { value: 'rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR', text: 'French Defense' },
+  { value: 'rnbqkb1r/pppppp1p/5np1/8/2PP4/8/PP2PPPP/RNBQKBNR', text: 'King\'s Indian Defense' }
+];
+const dropdown = document.getElementById('myDropdown');
+openings.forEach(option => {
+  const opt = document.createElement('option');
+  opt.value = option.value;
+  opt.textContent = option.text;
+  dropdown.appendChild(opt);
+});
+dropdown.addEventListener('change', function() {
+  const selectedOption = dropdown.value;
+  if (selectedOption) {
+      FENCode = selectedOption;
+      gameStates = [FENCode];
+      createBoard(FENCode);
+      listenOnSquares();
+      if(turn.toLowerCase() != 'white'){
+        switchTurns();
+      }
+      document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
+      document.getElementById("evaluation").innerHTML = `Evaluation: ${selectedOption == startFEN ? 0: evaluateBoard(turn).toFixed(2)}`;
+  }
+});
+
 const playerMoved = new CustomEvent("playerMoved");
 const buttonWhite = document.getElementById('buttonWhite');
 const buttonBlack = document.getElementById('buttonBlack');
@@ -1770,10 +1798,7 @@ function evaluateBoard(color){
     playerPerspective = -1;
   let score = countPieceVal('white') - countPieceVal('black');
   calculateAttacksDefense();
-  console.log(attackedPieces, 'attacked pieces');
-  console.log(defendedPieces, 'defended pieces');
   for(let i = 0; i < attackedPieces.length; i++){
-    console.log(attackedPieces[i] != 0);
     if(attackedPieces[i] != 0 && defendedPieces[i] == 0){
       let attackedPieceCol = attackedPieces[i].firstChild.getAttribute('color');
       let pieceType = attackedPieces[i].firstChild.id.toLowerCase();
@@ -1809,9 +1834,9 @@ function evaluateBoard(color){
             score += 9;
         case 'k': 
           if(attackedPieceCol == "white")
-            score = -Infinity;
+            score -= 5;
           else if(attackedPieceCol == 'black')
-            score = Infinity;
+            score += 5;
           break;
       }
     }
