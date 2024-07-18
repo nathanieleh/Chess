@@ -1,15 +1,20 @@
 let FENCode = startFEN;
-let gameStates = [FENCode];
+// let FENCode = testFEN;
+let gameStates = [];
+let turn = 'White';
+let numHalfMoves = 0;
+let numMoves = 0;
 let playerWhite = "Player";
 let playerBlack = "Player";
 let moveDelay = 50;
-createBoard(FENCode);
+createBoard(FENCode, true);
+document.getElementById('turn').innerHTML = `${turn}'s Turn`;
 
 const openings = [
   { value: startFEN, text: 'New Game' },
-  { value: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR', text: 'Sicilian Defense' },
-  { value: 'rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR', text: 'French Defense' },
-  { value: 'rnbqkb1r/pppppp1p/5np1/8/2PP4/8/PP2PPPP/RNBQKBNR', text: 'King\'s Indian Defense' }
+  { value: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2', text: 'Sicilian Defense' },
+  { value: 'rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', text: 'French Defense' },
+  { value: 'rnbqkb1r/pppppp1p/5np1/8/2PP4/8/PP2PPPP/RNBQKBNR w KQkq - 1 3', text: 'King\'s Indian Defense' }
 ];
 const dropdown = document.getElementById('myDropdown');
 openings.forEach(option => {
@@ -22,13 +27,13 @@ dropdown.addEventListener('change', function() {
   const selectedOption = dropdown.value;
   if (selectedOption) {
       FENCode = selectedOption;
-      gameStates = [FENCode];
-      createBoard(FENCode);
+      gameStates = [];
+      createBoard(FENCode, true);
       listenOnSquares();
       if(turn.toLowerCase() != 'white'){
         switchTurns();
       }
-      document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
+      document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
       document.getElementById("evaluation").innerHTML = `Evaluation: ${selectedOption == startFEN ? 0: evaluateBoard(turn).toFixed(2)}`;
   }
 });
@@ -54,7 +59,6 @@ buttonStart.addEventListener("click", function () {
     document.dispatchEvent(new Event("playerMoved"));
 });
 
-let turn = 'White';
 let selectedPiece;
 let allPawns = document.querySelectorAll('.square #p, .square #P');
 let allPieces = document.querySelectorAll(".piece");
@@ -146,6 +150,7 @@ function makeMove(piece, destination, realMove) {
     destination.innerHTML = piece.innerHTML;
   piece.innerHTML = '';
   if(realMove){
+    switchTurns();
     allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
     gameStates.push(updateFEN());
   }
@@ -1634,7 +1639,7 @@ function calculateChecksNoKing() {
  */
 function revertMove() {
   gameStates.pop();
-  createBoard(gameStates[gameStates.length - 1]);
+  createBoard(gameStates[gameStates.length - 1], false);
   switchTurns();
   listenOnSquares();
 }
@@ -1675,11 +1680,10 @@ function checkForCheckMate(){
 }
 
 /**
- * Makes a move for the bot player.
- * @param {string} botColor - the turn which tells which color the bot needs to make the move for
+ * Chooses a move for the bot player.
+ * @param {string} botColor - the turn which tells which color the bot needs to choose the move for
  * @returns {Object} The move object containing the piece and destination.
  */
-// TODO: Implement the minimax algorithm for the bot to play against human players
 function makeBotMove(botColor) {
   let allMoves = [];
   let bestMove = {};
@@ -1692,20 +1696,22 @@ function makeBotMove(botColor) {
     const move = allMoves[i];
     let piece = document.querySelector(`[square-id="${move.piece}"]`);
     let destination = document.querySelector(`[square-id="${move.destination}"]`);
-    makeMove(piece, destination, false);
-    gameStates.push(updateFEN());
-    console.log(move, updateFEN());
-    switchTurns();
+    let possiblePosition = '';
+    makeMove(piece, destination, true);
+    possiblePosition = updateFEN();
+    console.log(move, possiblePosition, turn);
+    console.log(gameStates);
     let oppScore = searchMoves(1, -Infinity, Infinity);
-    switchTurns();
     gameStates.pop();
-    createBoard(gameStates[gameStates.length - 1]);
+    console.log(gameStates);
+    createBoard(gameStates[gameStates.length - 1], false);
     listenOnSquares();
     if (oppScore < bestMinOppScore) {
       bestMinOppScore = oppScore;
       bestMove = move;
     }
   }
+  console.log(bestMove, gameStates);
   return bestMove;
 }
 
@@ -1728,14 +1734,11 @@ function searchMoves(depth, alpha, beta){
     let move = allMoves[i];
     let piece = document.querySelector(`[square-id="${move.piece}"]`);
     let destination = document.querySelector(`[square-id="${move.destination}"]`);
-    makeMove(piece, destination, false);
+    makeMove(piece, destination, true);
     console.log(move);
-    gameStates.push(updateFEN());
-    switchTurns();
     score = -searchMoves(depth - 1, -beta, -alpha);
-    switchTurns();
     gameStates.pop();
-    createBoard(gameStates[gameStates.length - 1]);
+    createBoard(gameStates[gameStates.length - 1], false);
     listenOnSquares();
     if(score >= beta){
       console.log("snip");
@@ -1940,39 +1943,34 @@ function listenOnSquares() {
       else if(!gameOver){
         selectedPiece.style.backgroundColor = '';
         if(moves.includes(destination)){
+          numHalfMoves++;
+          numMoves++;
           const color = selectedPiece.firstChild.getAttribute("color");
           if(color == turn.toLowerCase()){
+            if(selectedPiece.firstChild.id.toLowerCase() == 'p' || destination.firstChild)
+              numHalfMoves = 0;
             makeMove(selectedPiece, destination, true);
             calculateChecks();
-            if(document.getElementById("K").parentNode.style.backgroundColor == 'orange' && color == 'white' ||
-              document.getElementById("k").parentNode.style.backgroundColor == 'orange' && color == 'black'){
-                revertMove();
-                illegalMove.play();
-                let kingWarning = setInterval(function() {
-                  animateInvalidMove(color);
-                }, 150);
-                setTimeout(() => {
-                  clearInterval(kingWarning);
-                }, 600);
-            }
-            else if(checks.length > 0 && (gameOver = checkForCheckMate())){
+            if(checks.length > 0 && (gameOver = checkForCheckMate())){
               checkmate.play();
             }
-            else if(gameOver = checkForCheckMate()){
+            else if(gameOver = checkForCheckMate() || numHalfMoves == 100){
               scatter.play();
               draw = true;
             }
-            else if(checks.length > 0)
+            else if(checks.length > 0){
               check.play();
-            else if(pieces != allPieces.length)
+            }
+            else if(pieces != allPieces.length){
               capture.play();
+            }
             else
               color == 'white' ? selfMove.play() : oppMove.play();
             if(!gameOver){
-              switchTurns();
               if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
                 setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
-              document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
+              console.log(gameStates, turn);
+              document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
               document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
             }
           }
@@ -2004,52 +2002,13 @@ function listenOnSquares() {
 }
 listenOnSquares();
 
+/**
+ * Calculates and makes the move for the bot
+ */
 document.addEventListener("playerMoved", function () {
-  let draw = false;
-  let pieces = allPieces.length;
   let botMove = makeBotMove(turn);
   let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
   let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-  makeMove(botPiece, botDestination, true);
-  calculateChecks();
-  if(checks.length > 0 && (gameOver = checkForCheckMate())){
-    checkmate.play();
-  }
-  else if(gameOver = checkForCheckMate()){
-    scatter.play();
-    draw = true;
-  }
-  else if(checks.length > 0)
-    check.play();
-  else if(pieces != allPieces.length)
-    capture.play();
-  else
-    turn.toLowerCase() == 'white' ? selfMove.play() : oppMove.play();
-  if(!gameOver){
-    switchTurns();
-    if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
-      setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
-    document.getElementById('numMoves').innerHTML = `Move ${gameStates.length - 1}`;
-    document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
-  }
-  allSquares.forEach(square => {
-    square.style.backgroundColor = '';
-  });
-  moves = [];
-  selectedPiece = '';
-  calculateChecks();
-  calculatePins();
-  pinnedPieces.forEach(piece => {
-    if(piece[0] != 0)
-      piece[0].style.backgroundColor = 'yellow';
-  });
-  if(draw){
-    document.getElementById('turn').innerHTML = `It's a Draw!`;
-    document.getElementById('turn').style.fontSize = '30px';
-    setTimeout(function() {alert(`It's a Draw!`)}, 100);
-  }
-  if(!draw && gameOver){
-    document.getElementById('turn').innerHTML = `${turn} Wins!`;
-    setTimeout(function() {alert(`${turn} wins!`)}, 100);
-  }
+  botPiece.click();
+  botDestination.click();
 });
