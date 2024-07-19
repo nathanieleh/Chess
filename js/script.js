@@ -1401,28 +1401,14 @@ function switchTurns() {
 
 /**
  * Calculates the checks in the chess game.
- * @param {HTMLElement} selectedPiece - The selected chess piece.
  * @returns {string} - The color(s) of the checked player(s).
  */
-function calculateChecks(selectedPiece) {
+function calculateChecks() {
   allPieces = document.querySelectorAll(".piece");
   checks = [];
   allPieces.forEach(piece => {
     calculateMoves(piece.parentNode);
-    moves = [];
   });
-  if(selectedPiece)
-    calculateMoves(selectedPiece);
-  if(checks.includes(document.querySelector("#k")?.parentNode) && checks.includes(document.querySelector("#K")?.parentNode)) {
-    return "white black";
-  }
-  else if(checks.includes(document.querySelector("#k")?.parentNode)) {
-    return "black";
-  }
-  else if(checks.includes(document.querySelector("#K")?.parentNode)) {
-    return "white";
-  }
-  return '';
 }
 
 //! might need to modify
@@ -1521,7 +1507,7 @@ function calculateColorMoves(color){
   allColorPieces.forEach(piece => {
     if(piece.id.toLowerCase() != 'k'){
       let moves = calculateMoves(piece.parentNode);
-      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][0] != 0){
+      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
         moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
       }
       moves.forEach(move => {
@@ -1634,7 +1620,11 @@ function countPieceVal(color){
           score += 9;
           break;
       }
-      score += calculateMoves(piece.parentNode).length * 0.1;
+      let moves = calculateMoves(piece.parentNode);
+      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
+        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
+      }
+      score += moves.length * 0.1;
     });
   }
   else {
@@ -1659,7 +1649,11 @@ function countPieceVal(color){
           score += 9;
           break;
       }
-      score += calculateMoves(piece.parentNode).length * 0.1;
+      let moves = calculateMoves(piece.parentNode);
+      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
+        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
+      }
+      score += moves.length * 0.1;
     });
   }
   return score;
@@ -1685,8 +1679,13 @@ function listenOnSquares() {
           return;
         }
         selectedPiece.style.backgroundColor='deepskyblue';
-        if(calculateChecks(selectedPiece).includes(selectedPiece?.firstChild?.getAttribute("color")))
-          teamInCheck = true;
+        calculateChecks();
+        checks.forEach(position => {
+          if(position == document.getElementById(turn == 'White' ? 'K' : 'k').parentNode)
+            teamInCheck = true;
+        });
+        calculatePins();
+        calculateMoves(selectedPiece);
         if(checks.length != 0 && teamInCheck && selectedPiece?.firstChild?.id.toLowerCase() != 'k'){
           moves = moves.filter(move => checks.includes(move));
         }
@@ -1710,11 +1709,12 @@ function listenOnSquares() {
             switchTurns();
             makeMove(selectedPiece, destination, true);
             calculateChecks();
-            if(checks.length > 0 && (gameOver = checkForCheckMate())){
+            gameOver = checkForCheckMate();
+            if(checks.length > 0 && gameOver){
               switchTurns();
               checkmate.play();
             }
-            else if(gameOver = checkForCheckMate() || numHalfMoves == 100){
+            else if(gameOver || numHalfMoves == 100){
               scatter.play();
               draw = true;
             }
@@ -1739,8 +1739,6 @@ function listenOnSquares() {
         });
         moves = [];
         selectedPiece = '';
-        calculateChecks();
-        calculatePins();
         if(draw){
           document.getElementById('turn').innerHTML = `It's a Draw!`;
           document.getElementById('turn').style.fontSize = '30px';
