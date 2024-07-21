@@ -1,16 +1,33 @@
+// used for debugging purposes if I want to start the game with a custom position
 let FENCode = startFEN;
 // let FENCode = testFEN;
+
+// keeps track of all positions run through in the current game so we can look back to previous positions of the same game
 let gameStates = [];
+
+// the current player to move
 let turn = 'White';
+
+// keeps track of the number of half moves and full moves in the game
 let numHalfMoves = 0;
 let numMoves = 0;
+
+// keeps track of the current position in the gameStates array
 let historyMove = 0;
+
+// keeps track of whether the given player is a "Player" or a "Bot"
 let playerWhite = "Player";
 let playerBlack = "Player";
+
+// delay between bot moves if site is running a bot game 
 let moveDelay = 0;
+
+// creates the starting position of the game
 createBoard(FENCode, true);
 document.getElementById('turn').innerHTML = `${turn}'s Turn`;
 
+// creates the dropdown menu for the user to select the opening they want to play
+const dropdown = document.getElementById('myDropdown');
 const openings = [
   { value: startFEN, text: 'New Game' },
   { value: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2', text: 'Sicilian Defense' },
@@ -18,7 +35,6 @@ const openings = [
   { value: 'rnbqkb1r/pppppp1p/5np1/8/2PP4/8/PP2PPPP/RNBQKBNR w KQkq - 1 3', text: 'King\'s Indian Defense' },
   { value: '', text: 'Custom FEN Position'}
 ];
-const dropdown = document.getElementById('myDropdown');
 openings.forEach(option => {
   const opt = document.createElement('option');
   opt.value = option.value;
@@ -34,11 +50,15 @@ dropdown.addEventListener('change', function() {
   gameStates = [];
   createBoard(FENCode, true);
   listenOnSquares();
+  gameStart.play();
   document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
   document.getElementById("evaluation").innerHTML = `Evaluation: ${selectedOption == startFEN ? 0 : evaluateBoard(turn).toFixed(2)}`;
 });
 
+// custom event so bot knows when to start its calculations for the current position
 const playerMoved = new CustomEvent("playerMoved");
+
+// event listeners for the buttons on the website
 const buttonWhite = document.getElementById('buttonWhite');
 const buttonBlack = document.getElementById('buttonBlack');
 const buttonStart = document.getElementById('buttonStart');
@@ -49,18 +69,15 @@ buttonWhite.addEventListener("click", function () {
   playerWhite == "Bot" ? playerWhite = "Player" : playerWhite = "Bot";
   buttonWhite.innerHTML = `Click to Change White: ${playerWhite}`;
 });
-
 buttonBlack.innerHTML = `Click to Change Black: ${playerBlack}`;
 buttonBlack.addEventListener("click", function () {
   playerBlack == "Bot" ? playerBlack = "Player" : playerBlack = "Bot";
   buttonBlack.innerHTML = `Click to Change Black: ${playerBlack}`;
 });
-
 buttonStart.addEventListener("click", function () {
   if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
     document.dispatchEvent(new Event("playerMoved"));
 });
-
 buttonPrevious.addEventListener("click", function () {
   if(historyMove > 0){
     switchTurns();
@@ -71,7 +88,6 @@ buttonPrevious.addEventListener("click", function () {
     document.getElementById("evaluation").innerHTML = `Evaluation: ${historyMove == 0 ? 0 : evaluateBoard(turn).toFixed(2)}`;
   }
 });
-
 buttonNext.addEventListener("click", function () {
   if(historyMove < gameStates.length - 1){
     switchTurns();
@@ -85,18 +101,39 @@ buttonNext.addEventListener("click", function () {
     listenOnSquares();
 });
 
-let selectedPiece;
+// piece that has been selected by the user / bot so we know which moves to show
+let selectedSquare;
+
+// selection of pieces to keep track of (these will be redefined throughout runtime)
 let allPawns = document.querySelectorAll('.square #p, .square #P');
 let allPieces = document.querySelectorAll(".piece");
 let allBlack = document.querySelectorAll("div[color='black']");
 let allWhite = document.querySelectorAll("div[color='white']");
+
+// keeps track of all squares of the board (will also be redefined throughout runtime)
 let allSquares = document.querySelectorAll("div.square");
+
+// tells the website if the game has finished
 let gameOver = false;
+
 let moves = [];
 let checks = [];
+
+// pinnedPieces[0] = piece involved in pin
+// pinnedPieces[1] = 0 if piece is not pinned 1 if it is
 let pinnedPieces = new Array(64).fill([0,0]);
-let attackedSquares = new Array(64).fill([0,0,0]);
-let defendedPieces = new Array(64).fill(0);
+
+// attackedSquares[0] = square attacked
+// attackedSquares[1] = whether square is attacked by white, stored as "white" if true
+// attackedSquares[2] = whether square is attacked by black, stored as "black" if true
+// attackedSquares[3] = pieces attacking square
+let attackedSquares = new Array(64).fill([0,0,0,[]]);
+
+// defendedPieces[0] = square defended
+// defendedPieces[1] = pieces defending square
+let defendedPieces = new Array(64).fill([0,[]]);
+
+// all audio files used during play
 let capture = new Audio('./audio/capture.mp3');
 let castle = new Audio('./audio/castle.mp3');
 let checkmate = new Audio('./audio/game-end.webm');
@@ -108,25 +145,162 @@ let selfMove = new Audio('./audio/move-self.mp3');
 let promote = new Audio('./audio/promote.mp3');
 let scatter = new Audio('./audio/scatter.mp3');
 
-//! gameStart.play();
+/**
+ * Listens for click events on the chess squares and handles the logic for selecting and moving pieces.
+ */
+function listenOnSquares() {
+  let draw = false;
+  allSquares = document.querySelectorAll("div.square");
+  allSquares.forEach(square => {
+    square.addEventListener("click", function (e) {
+      let destination = e.target;
+      console.log(destination, 'destination');
+      let teamInCheck = false;
+      let pieces = allPieces.length;
+      // no piece has been selected yet, so select this one and show possible moves
+      if(!selectedSquare && !gameOver){
+        selectedSquare = e.target;
+        if(selectedSquare.innerHTML == ''){
+          selectedSquare = '';
+          return;
+        }
+        selectedSquare.style.backgroundColor='deepskyblue';
+        calculateChecks();
+        checks.forEach(position => {
+          if(position == document.getElementById(turn == 'White' ? 'K' : 'k').parentNode)
+            teamInCheck = true;
+        });
+        calculatePins();
+        calculateMovesChecks(selectedSquare);
+        if(checks.length != 0 && teamInCheck && selectedSquare?.firstChild?.id.toLowerCase() != 'k'){
+          moves = moves.filter(move => checks.includes(move));
+        }
+        if(pinnedPieces[parseInt(selectedSquare.getAttribute('square-id'))][0] != 0 &&
+            pinnedPieces[parseInt(selectedSquare.getAttribute('square-id'))][1] != 0){
+          moves = moves.filter(move => pinnedPieces.map(pair => pair[0])[parseInt(move.getAttribute('square-id'))] != 0);
+        }
+        colorMoves();
+      }
+
+      // there is already a selected square, so check if the move the player makes is valid
+      else if(!gameOver){
+        selectedSquare.style.backgroundColor = '';
+        if(moves.includes(destination)){
+          // updates all global variables so we can create the correct FEN position, and look through history
+          numHalfMoves++;
+          numMoves++;
+          historyMove++;
+
+          const color = selectedSquare.firstChild.getAttribute("color");
+          // if the selected piece the player wants to move is for the color to move, handle movement
+          if(color == turn.toLowerCase()){
+            // updates halfMoves to 0 if pawn is pushed or a capture happens
+            if(selectedSquare.firstChild.id.toLowerCase() == 'p' || destination.firstChild)
+              numHalfMoves = 0;
+
+            // handles the move and updates checks array
+            switchTurns();
+            makeMove(selectedSquare, destination);
+            calculateChecks();
+
+            gameOver = checkForCheckMateOrDraw();
+            if(checks.length > 0 && gameOver){
+              // the current position is checkmate
+              switchTurns();
+              checkmate.play();
+            }
+            else if(gameOver || numHalfMoves == 100){
+              // the current position is a draw or 100 halfMoves occur, which is also a draw
+              scatter.play();
+              draw = true;
+            }
+            else if(checks.length > 0){
+              // just a check is made
+              check.play();
+            }
+            else if(pieces != allPieces.length){
+              // a capture occurred
+              capture.play();
+            }
+            else{
+              // only a piece move occurred
+              color == 'white' ? selfMove.play() : oppMove.play();
+            }
+            if(!gameOver){
+              if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black"){
+                // if the player to move now is a bot, make the bot move
+                setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
+              }
+              document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
+              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
+            }
+          }
+          // reset all moves for the piece and deselect the square
+          allSquares.forEach(square => {
+            square.style.backgroundColor = '';
+          });
+          moves = [];
+          selectedSquare = '';
+        }
+        else{
+          // the click is not valuable information for a move so deselect the current square
+          // and select this new square as if the previous selection did not happen resetting all moves for the piece
+          allSquares.forEach(square => {
+            square.style.backgroundColor = '';
+          });
+          moves = [];
+          selectedSquare = '';
+          destination.click();
+        }
+        if(draw){
+          // the game is a draw so present that on the site
+          document.getElementById('turn').innerHTML = `It's a Draw!`;
+          document.getElementById('turn').style.fontSize = '30px';
+          setTimeout(function() {alert(`It's a Draw!`)}, 100);
+        }
+        if(!draw && gameOver){
+          // the game is over and has a winner so present that on the site
+          document.getElementById('turn').innerHTML = `${turn} Wins!`;
+          document.getElementById('turn').style.fontSize = '30px';
+          setTimeout(function() {alert(`${turn} wins!`)}, 100);
+        }
+      }
+    });
+  });
+}
+listenOnSquares();
+
+// Calculates and makes the move for the bot
+document.addEventListener("playerMoved", function () {
+  // checks to make sure we are not looking back at a previous position
+  if(historyMove == gameStates.length - 1){
+    let botMove = makeBotMove(turn);
+    let botStart = document.querySelector(`[square-id="${botMove.start}"]`);
+    let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
+    console.log('botMove');
+    botStart.click();
+    botDestination.click();
+  }
+});
 
 /**
- * Makes a move on the chessboard.
- * @param {HTMLElement} piece - The piece being moved.
+ * Makes a move on the chessboard and ensures rules like enpassant, promotion, and castling are maintained.
+ * 
+ * @param {HTMLElement} start - The start square for the piece being moved.
  * @param {HTMLElement} destination - The destination square where the piece is being moved to.
- * @param {boolean} realMove - Flag to determine if this move was made by the player or the system.
  */
-function makeMove(piece, destination, realMove) {
-  const pieceType = piece.firstChild.getAttribute("id").toLowerCase();
-  const color = piece.firstChild.getAttribute("color");
-  const from = parseInt(piece.getAttribute("square-id"));
+function makeMove(start, destination) {
+  const pieceType = start.firstChild.getAttribute("id").toLowerCase();
+  const color = start.firstChild.getAttribute("color");
+  const from = parseInt(start.getAttribute("square-id"));
   const to = parseInt(destination.getAttribute("square-id"));
-  let placementHandled = false;
+  let placementHandled = false; // tells function whether move has been handled in special cases for the destination
   allPawns = document.querySelectorAll('.square #p, .square #P');
+
   // handles enpassant for pawns and queen promotion
   if(pieceType == 'p'){
     if(Math.abs(from - to) == 16){
-      piece.firstChild.setAttribute("enpassant", 'true');
+      start.firstChild.setAttribute("enpassant", 'true');
     }
     if(Math.abs(from - to) != 8){
       if(color == "white"){
@@ -151,9 +325,10 @@ function makeMove(piece, destination, realMove) {
       placementHandled = true;
     }
   }
+
   // handles castling
-  if(pieceType == 'k' && realMove){
-    piece.firstChild.setAttribute("castle", 'false');
+  if(pieceType == 'k'){
+    start.firstChild.setAttribute("castle", 'false');
     // castling king side
     if(from - to == -2){
       const rookFrom = document.querySelector(`[square-id="${to + 1}"]`);
@@ -170,24 +345,124 @@ function makeMove(piece, destination, realMove) {
     }
   }
   if(pieceType == 'r'){
-    piece.firstChild.setAttribute("castle", 'false');
+    start.firstChild.setAttribute("castle", 'false');
   }
+
   if(!placementHandled)
-    destination.innerHTML = piece.innerHTML;
-  piece.innerHTML = '';
-  if(realMove){
-    allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
-    gameStates.push(updateFEN());
-  }
+    destination.innerHTML = start.innerHTML;
+  start.innerHTML = '';
+  
+  allPawns.forEach(pawn => pawn.setAttribute("enpassant", 'false'));
+  gameStates.push(updateFEN());
 }
 
 /**
- * Calculates the possible moves for a rook on the chessboard.
+ * Calculates the possible moves and checks for a selected chess piece.
+ * ! this also updates the global checks array
+ * 
+ * @param {HTMLElement} selectedSquare - The selected chess piece.
+ * @returns {Array} - An array of possible moves for the selected piece.
+ */
+function calculateMovesChecks(selectedSquare) {
+  moves = [];
+  if(!selectedSquare)
+    return [];
+  let pieceType = selectedSquare.firstChild?.getAttribute("id").toLowerCase();
+  let color = selectedSquare.firstChild?.getAttribute("color");
+  let id = parseInt(selectedSquare.getAttribute("square-id"));
+  // based on the piece type, add the proper moves for that piece to moves
+  switch (pieceType) {
+    case "r":
+      rookMovesChecks(id, color);
+      break;
+    case "b":
+      bishopMovesChecks(id, color);
+      break;
+    case "q":
+      rookMovesChecks(id, color);
+      bishopMovesChecks(id, color);
+      break;
+    case "n":
+      knightMovesChecks(id, color);
+      break;
+    case "k":
+      calculateAttacksDefense();
+      kingMovesChecks(id, color);
+      break;
+    case "p":
+      pawnMovesChecks(id, color);
+      break;
+  }
+  return moves;
+}
+
+/**
+ * Calculates attacked and defended squares/pieces and updates the global attack and defense arrays
+ */
+function calculateAttacksDefense(){
+  attackedSquares = new Array(64).fill([0,0,0]);
+  defendedPieces = new Array(64).fill(0);
+  allPieces = document.querySelectorAll(".piece");
+  allPieces.forEach(piece => {
+    let id = parseInt(piece.parentNode.getAttribute("square-id"));
+    let pieceType = piece.getAttribute("id").toLowerCase();
+    let color = piece.getAttribute("color");
+    switch (pieceType) {
+      case "r":
+        rookAttacksDefense(id, color);
+        break;
+      case "b":
+        bishopAttacksDefense(id, color);
+        break;
+      case "q":
+        rookAttacksDefense(id, color);
+        bishopAttacksDefense(id, color);
+        break;
+      case "n":
+        knightAttacksDefense(id, color);
+        break;
+      case "k":
+        kingAttacksDefense(id, color);
+        break;
+      case "p":
+        pawnAttacksDefense(id, color);
+        break;
+    }
+  });
+}
+
+/**
+ * Calculates the pinned pieces on the chessboard and updates the pinned pieces array
+ */
+function calculatePins(){
+  pinnedPieces = new Array(64).fill([0,0]);
+  allPieces = document.querySelectorAll(".piece");
+  allPieces.forEach(piece => {
+    let id = parseInt(piece.parentNode.getAttribute("square-id"));
+    let pieceType = piece.getAttribute("id").toLowerCase();
+    let color = piece.getAttribute("color");
+    switch (pieceType) {
+      case "r":
+        rookPins(id, color);
+        break;
+      case "b":
+        bishopPins(id, color);
+        break;
+      case "q":
+        rookPins(id, color);
+        bishopPins(id, color);
+    }
+  });
+}
+
+/**
+ * Calculates the possible moves and checks for a rook.
+ * ! this also updates the global checks array
  * 
  * @param {number} id - The ID of the rook square.
  * @param {string} color - The color of the rook ('white' or 'black').
  */
-function rookMoves(id, color){
+function rookMovesChecks(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -264,7 +539,8 @@ function rookMoves(id, color){
 }
 
 /**
- * Calculates the possible attacks by the rook
+ * Calculates the possible attacks and defended pieces by the rook and updates
+ * the global attacks and defense arrays
  * 
  * @param {number} id - The ID of the rook square.
  * @param {string} color - The color of the rook ('white' or 'black').
@@ -332,12 +608,125 @@ function rookAttacksDefense(id, color){
 }
 
 /**
- * Calculates the possible moves for a bishop on the chessboard.
+ * Calculates the pinned pieces from a rook on the chessboard and updates the global pinned array
+ * 
+ * @param {number} id - The ID of the square where the rook is located.
+ * @param {string} color - The color of the rook piece ('white' or 'black').
+ */
+function rookPins(id, color){
+  let pinLine = [];
+  let pinned = -1;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  let newId = 0;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset;
+    if(col + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset;
+    if(col + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset*8;
+    if(row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset*8;
+    if(row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+}
+
+/**
+ * Calculates the possible moves and checks for a bishop.
+ * ! this also updates the global checks array
  * 
  * @param {number} id - The ID of the bishop square.
  * @param {string} color - The color of the bishop ('white' or 'black').
  */
-function bishopMoves(id, color){
+function bishopMovesChecks(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -412,7 +801,8 @@ function bishopMoves(id, color){
 }
 
 /**
- * Calculates the possible attacks for a bishop on the chessboard.
+ * Calculates the possible attacks and defended pieces by the bishop and updates
+ * the global attacks and defense arrays
  * 
  * @param {number} id - The ID of the bishop square.
  * @param {string} color - The color of the bishop ('white' or 'black').
@@ -480,11 +870,125 @@ function bishopAttacksDefense(id, color){
 }
 
 /**
- * Calculates the possible moves for a knight on a chessboard.
+ * Calculates the pinned pieces from a bishop on the chessboard and updates the global pinned array
+ * 
+ * @param {number} id - The ID of the square where the bishop is located.
+ * @param {string} color - The color of the bishop piece ('white' or 'black').
+ */
+function bishopPins(id, color){
+  let pinLine = [];
+  let pinned = -1;
+  const row = Math.floor(id / 8);
+  const col = id % 8;
+  let newId = 0;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset * 9;
+    if(col + offset >= 0 && row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset * 9;
+    if(col + offset <= 7 && row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = -1; offset > -8; offset--){
+    newId = id + offset * 7;
+    if(col - offset <= 7 && row + offset >= 0){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+  pinLine = [];
+  pinned = -1;
+  for(let offset = 1; offset < 8; offset++){
+    newId = id + offset * 7;
+    if(col - offset >= 0 && row + offset <= 7){
+      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
+      if(pinned == -1){
+        pinLine.push(newId);
+      }
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
+        pinLine.forEach(element => {
+          if(element != pinned)
+            pinnedPieces[element] = [allSquares[element], 0];
+          else
+            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+        });
+        pinnedPieces[id] = [allSquares[id], 0];
+      }
+      else if(allSquares[newId].firstChild && pinned != -1)
+          break;
+      if(allSquares[newId].firstChild &&
+        pinned == -1)
+          pinned = newId;
+    }
+  }
+}
+
+/**
+ * Calculates the possible moves and checks for a knight.
+ * ! this also updates the global checks array
+ * 
  * @param {number} id - The current position of the knight on the chessboard.
  * @param {string} color - The color of the knight ('white' or 'black').
  */
-function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
+function knightMovesChecks(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -587,7 +1091,9 @@ function knightMoves(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
 }
 
 /**
- * Calculates the possible attacks for a knight on a chessboard.
+ * Calculates the possible attacks and defended pieces by the knight and updates
+ * the global attacks and defense arrays
+ * 
  * @param {number} id - The current position of the knight on the chessboard.
  * @param {string} color - The color of the knight ('white' or 'black').
  */
@@ -670,12 +1176,13 @@ function knightAttacksDefense(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
 }
 
 /**
- * Calculates the possible moves for a king piece on the chessboard.
+ * Calculates the possible moves and checks for a king.
+ * ! this also updates the global checks array
  * 
  * @param {number} id - The ID of the square where the king is located.
  * @param {string} color - The color of the king piece ('white' or 'black').
  */
-function kingMoves(id, color){
+function kingMovesChecks(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -803,7 +1310,8 @@ function kingMoves(id, color){
 }
 
 /**
- * Calculates the possible attacks for a king piece on the chessboard.
+ * Calculates the possible attacks and defended pieces by the king and updates
+ * the global attacks and defense arrays
  * 
  * @param {number} id - The ID of the square where the king is located.
  * @param {string} color - The color of the king piece ('white' or 'black').
@@ -887,12 +1395,13 @@ function kingAttacksDefense(id, color){
 }
 
 /**
- * Calculates the possible moves for a pawn on the chessboard.
+ * Calculates the possible moves and checks for a pawn.
+ * ! this also updates the global checks array
  * 
  * @param {number} id - The ID of the pawn.
  * @param {string} color - The color of the pawn ('white' or 'black').
  */
-function pawnMoves(id, color){
+function pawnMovesChecks(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -986,7 +1495,8 @@ function pawnMoves(id, color){
 }
 
 /**
- * Calculates the possible attacks for a pawn on the chessboard.
+ * Calculates the possible attacks and defended pieces by the pawn and updates
+ * the global attacks and defense arrays
  * 
  * @param {number} id - The ID of the pawn.
  * @param {string} color - The color of the pawn ('white' or 'black').
@@ -1058,397 +1568,41 @@ function pawnAttacksDefense(id, color){
 }
 
 /**
- * Calculates the possible moves for a selected chess piece.
- * @param {HTMLElement} selectedPiece - The selected chess piece.
- * @returns {Array} - An array of possible moves for the selected piece.
- */
-function calculateMoves(selectedPiece) {
-  moves = [];
-  if(!selectedPiece)
-    return [];
-  let pieceType = selectedPiece.firstChild?.getAttribute("id").toLowerCase();
-  let color = selectedPiece.firstChild?.getAttribute("color");
-  let id = parseInt(selectedPiece.getAttribute("square-id"));
-  // based on the piece type, add the proper moves for that piece to moves
-  switch (pieceType) {
-    case "r":
-      rookMoves(id, color);
-      break;
-    case "b":
-      bishopMoves(id, color);
-      break;
-    case "q":
-      rookMoves(id, color);
-      bishopMoves(id, color);
-      break;
-    case "n":
-      knightMoves(id, color);
-      break;
-    case "k":
-      calculateAttacksDefense();
-      kingMoves(id, color);
-      break;
-    case "p":
-      pawnMoves(id, color);
-      break;
-  }
-  return moves;
-}
-
-/**
- * Calculates the pinned pieces on the chessboard
- */
-function calculatePins(){
-  pinnedPieces = new Array(64).fill([0,0]);
-  allPieces = document.querySelectorAll(".piece");
-  allPieces.forEach(piece => {
-    let id = parseInt(piece.parentNode.getAttribute("square-id"));
-    let pieceType = piece.getAttribute("id").toLowerCase();
-    let color = piece.getAttribute("color");
-    switch (pieceType) {
-      case "r":
-        rookPins(id, color);
-        break;
-      case "b":
-        bishopPins(id, color);
-        break;
-      case "q":
-        rookPins(id, color);
-        bishopPins(id, color);
-    }
-  });
-}
-
-/**
- * Calculates attacked pieces on the chessboard
- */
-function calculateAttacksDefense(){
-  attackedSquares = new Array(64).fill([0,0,0]);
-  defendedPieces = new Array(64).fill(0);
-  allPieces = document.querySelectorAll(".piece");
-  allPieces.forEach(piece => {
-    let id = parseInt(piece.parentNode.getAttribute("square-id"));
-    let pieceType = piece.getAttribute("id").toLowerCase();
-    let color = piece.getAttribute("color");
-    switch (pieceType) {
-      case "r":
-        rookAttacksDefense(id, color);
-        break;
-      case "b":
-        bishopAttacksDefense(id, color);
-        break;
-      case "q":
-        rookAttacksDefense(id, color);
-        bishopAttacksDefense(id, color);
-        break;
-      case "n":
-        knightAttacksDefense(id, color);
-        break;
-      case "k":
-        kingAttacksDefense(id, color);
-        break;
-      case "p":
-        pawnAttacksDefense(id, color);
-        break;
-    }
-  });
-}
-
-/**
- * Calculates the pinned pieces from a bishop on the chessboard.
- * 
- * @param {number} id - The ID of the square where the bishop is located.
- * @param {string} color - The color of the bishop piece ('white' or 'black').
- */
-function bishopPins(id, color){
-  let pinLine = [];
-  let pinned = -1;
-  const row = Math.floor(id / 8);
-  const col = id % 8;
-  let newId = 0;
-  for(let offset = -1; offset > -8; offset--){
-    newId = id + offset * 9;
-    if(col + offset >= 0 && row + offset >= 0){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-  pinLine = [];
-  pinned = -1;
-  for(let offset = 1; offset < 8; offset++){
-    newId = id + offset * 9;
-    if(col + offset <= 7 && row + offset <= 7){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-  pinLine = [];
-  pinned = -1;
-  for(let offset = -1; offset > -8; offset--){
-    newId = id + offset * 7;
-    if(col - offset <= 7 && row + offset >= 0){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-  pinLine = [];
-  pinned = -1;
-  for(let offset = 1; offset < 8; offset++){
-    newId = id + offset * 7;
-    if(col - offset >= 0 && row + offset <= 7){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-}
-
-/**
- * Calculates the pinned pieces from a rook on the chessboard.
- * 
- * @param {number} id - The ID of the square where the rook is located.
- * @param {string} color - The color of the rook piece ('white' or 'black').
- */
-function rookPins(id, color){
-  let pinLine = [];
-  let pinned = -1;
-  const row = Math.floor(id / 8);
-  const col = id % 8;
-  let newId = 0;
-  for(let offset = -1; offset > -8; offset--){
-    newId = id + offset;
-    if(col + offset >= 0){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-  pinLine = [];
-  pinned = -1;
-  for(let offset = 1; offset < 8; offset++){
-    newId = id + offset;
-    if(col + offset <= 7){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-  pinLine = [];
-  pinned = -1;
-  for(let offset = -1; offset > -8; offset--){
-    newId = id + offset*8;
-    if(row + offset >= 0){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-  pinLine = [];
-  pinned = -1;
-  for(let offset = 1; offset < 8; offset++){
-    newId = id + offset*8;
-    if(row + offset <= 7){
-      if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
-        pinLine.push(newId);
-      }
-      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
-        pinLine.forEach(element => {
-          if(element != pinned)
-            pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
-        });
-        pinnedPieces[id] = [allSquares[id], 0];
-      }
-      else if(allSquares[newId].firstChild && pinned != -1)
-          break;
-      if(allSquares[newId].firstChild &&
-        pinned == -1)
-          pinned = newId;
-    }
-  }
-}
-
-/**
- * Changes the background color of each square in the moves array to crimson.
- */
-function colorMoves() {
-  moves.forEach(square => {
-    square.style.backgroundColor = 'crimson';
-  });
-}
-
-/**
- * Switches the turns between 'White' and 'Black' and updates the turn display.
- */
-function switchTurns() {
-  if (turn === 'White') {
-    turn = 'Black';
-  } else {
-    turn = 'White';
-  }
-  document.getElementById('turn').innerHTML = `${turn}'s Turn`;
-}
-
-/**
- * Calculates the checks in the chess game.
- * @returns {string} - The color(s) of the checked player(s).
- */
-function calculateChecks() {
-  allPieces = document.querySelectorAll(".piece");
-  checks = [];
-  allPieces.forEach(piece => {
-    calculateMoves(piece.parentNode);
-  });
-}
-
-//! might need to modify
-/**
- * Checks if the current game state is a checkmate.
- * @returns {boolean} Returns true if the game state is a checkmate, false otherwise.
- */
-function checkForCheckMate(){
-  let possibleMoves = [];
-  possibleMoves = calculateColorMoves(turn);
-  return possibleMoves.length == 0;
-}
-
-/**
  * Chooses a move for the bot player.
+ * 
  * @param {string} botColor - the turn which tells which color the bot needs to choose the move for
- * @returns {Object} The move object containing the piece and destination.
+ * @returns {Object} The move object containing the starting square and destination.
  */
 function makeBotMove(botColor) {
   let allMoves = [];
   let bestMove = {};
   let bestMinOppScore = Infinity;
-  allMoves = calculateColorMoves(botColor);
 
   // all possible moves have been calculated for the bot's position
+  allMoves = calculateColorMoves(botColor);
+
   // now sift through all future moves and find the best result
   for (let i = 0; i < allMoves.length; i++) {
+    // chooses and makes a move to see how well the opponent can respond
     const move = allMoves[i];
-    let piece = document.querySelector(`[square-id="${move.piece}"]`);
+    let start = document.querySelector(`[square-id="${move.start}"]`);
     let destination = document.querySelector(`[square-id="${move.destination}"]`);
     let possiblePosition = '';
     switchTurns();
-    makeMove(piece, destination, true);
+    makeMove(start, destination);
     possiblePosition = updateFEN();
     console.log(move, possiblePosition, turn);
+
+    // determines the best score for the opponent given the new position
     let oppScore = searchMoves(1, -Infinity, Infinity);
+
+    // undoes the previous move made
     gameStates.pop();
     createBoard(gameStates[gameStates.length - 1], false);
     listenOnSquares();
+
     if (oppScore < bestMinOppScore) {
+      // this score is more favorable for the player so we save this move
       bestMinOppScore = oppScore;
       bestMove = move;
     }
@@ -1459,35 +1613,45 @@ function makeBotMove(botColor) {
 
 
 /**
- * Searches for the best score using the minimax algorithm with alpha-beta pruning.
+ * Searches for the best score using the minimax algorithm with alpha-beta pruning given a new position.
+ * 
  * @param {number} depth - The depth of the search tree.
- * @param {number} alpha - The alpha value for alpha-beta pruning.
- * @param {number} beta - The beta value for alpha-beta pruning.
- * @returns {number} - The best score found.
+ * @param {number} alpha - The best value for the player maximizing the position.
+ * @param {number} beta - The best value for the player minimizing the position.
+ * @returns {number} - The best score found as a result of a particular move.
  */
 function searchMoves(depth, alpha, beta){
   let allMoves = [];
   let score = 0;
   if(depth == 0){
+    // the line is complete so return the final position
     return evaluateBoard(turn);
   }
   allMoves = calculateColorMoves(turn);
   for(let i = 0; i < allMoves.length; i++){
+    // chooses a new move to start a new line of calculation
     let move = allMoves[i];
-    let piece = document.querySelector(`[square-id="${move.piece}"]`);
+    let start = document.querySelector(`[square-id="${move.start}"]`);
     let destination = document.querySelector(`[square-id="${move.destination}"]`);
     switchTurns();
-    makeMove(piece, destination, true);
+    makeMove(start, destination);
     console.log(move);
+
+    // search through the new position
     score = -searchMoves(depth - 1, -beta, -alpha);
+
+    // undo the previous move made
     gameStates.pop();
     createBoard(gameStates[gameStates.length - 1], false);
     listenOnSquares();
+
     if(score >= beta){
+      // this score is too bad for the player so we cut this calculation short
       console.log("snip");
       return beta;
     }
     if(score > alpha){
+      // store this as the new best value achievable
       alpha = score;
     }
   }
@@ -1495,47 +1659,9 @@ function searchMoves(depth, alpha, beta){
 }
 
 /**
- * Calculates all possible moves for the given color
- * @param color - the color of the pieces to calculate
- * 
- * @returns a list of all possible moves for the color
- */
-function calculateColorMoves(color){
-  let allMoves = [];
-  let allColorPieces = document.querySelectorAll(`div[color='${color.toLowerCase()}']`);
-  calculatePins();
-  allColorPieces.forEach(piece => {
-    if(piece.id.toLowerCase() != 'k'){
-      let moves = calculateMoves(piece.parentNode);
-      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
-        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
-      }
-      moves.forEach(move => {
-        if(checks.length > 0){
-          if(checks.includes(move)){
-            allMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
-          }
-        }
-        else{
-          allMoves.push({piece: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
-        }
-      });
-    }
-  });
-  let kingPiece = '';
-  color.toLowerCase() == 'white' ? kingPiece = 'K' : kingPiece = 'k';
-  let kingMoves = calculateMoves(document.getElementById(kingPiece).parentNode);
-  let kingPosition = document.getElementById(kingPiece).parentNode.getAttribute("square-id");
-  kingMoves.forEach(move => {
-    allMoves.push({piece: kingPosition, destination: move.getAttribute("square-id")});
-  });
-  return allMoves;
-}
-
-/**
  * Calculates the evaluation of the current board for the bot to consider
- * @param color determines whether or not the evaluation should be for the white player or black player
  * 
+ * @param color determines whether or not the evaluation should be for the white player or black player
  * @returns the score of the current position
  */
 function evaluateBoard(color){
@@ -1590,9 +1716,9 @@ function evaluateBoard(color){
   return score * playerPerspective;
 }
 
-
 /**
  * Calculates the total value of pieces for a given color.
+ * 
  * @param {string} color - The color of the pieces ('black' or 'white').
  * @returns {number} - The total value of the pieces.
  */
@@ -1601,10 +1727,11 @@ function countPieceVal(color){
   if(color.toLowerCase() == 'black'){
     allBlack = document.querySelectorAll("div[color='black']");
     allBlack.forEach(piece => {
+      let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
       switch(piece.id){
         case 'p':
           score += 1;
-          const row = Math.floor(parseInt(piece.parentNode.getAttribute('square-id')) / 8);
+          const row = Math.floor(squareId / 8);
           score += row * .1;
           break;
         case 'r':
@@ -1620,8 +1747,8 @@ function countPieceVal(color){
           score += 9;
           break;
       }
-      let moves = calculateMoves(piece.parentNode);
-      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
+      let moves = calculateMovesChecks(piece.parentNode);
+      if(pinnedPieces[squareId][1] != 0){
         moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
       }
       score += moves.length * 0.1;
@@ -1630,10 +1757,11 @@ function countPieceVal(color){
   else {
     allWhite = document.querySelectorAll("div[color='white']");
     allWhite.forEach(piece => {
+      let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
       switch(piece.id.toLowerCase()){
         case 'p':
           score += 1;
-          const row = Math.floor(parseInt(piece.parentNode.getAttribute('square-id')) / 8);
+          const row = Math.floor(squareId / 8);
           score += (8 - row) * .1;
           break;
         case 'r':
@@ -1649,8 +1777,8 @@ function countPieceVal(color){
           score += 9;
           break;
       }
-      let moves = calculateMoves(piece.parentNode);
-      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
+      let moves = calculateMovesChecks(piece.parentNode);
+      if(pinnedPieces[squareId][1] != 0){
         moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
       }
       score += moves.length * 0.1;
@@ -1659,111 +1787,90 @@ function countPieceVal(color){
   return score;
 }
 
-
 /**
- * Listens for click events on the chess squares and handles the logic for selecting and moving pieces.
+ * Calculates all possible moves for the given color
+ * 
+ * @param color - the color of the pieces to calculate
+ * @returns a list of all possible moves for the color
  */
-function listenOnSquares() {
-  let draw = false;
-  allSquares = document.querySelectorAll("div.square");
-  allSquares.forEach(square => {
-    square.addEventListener("click", function (e) {
-      let destination = e.target;
-      let teamInCheck = false;
-      let pieces = allPieces.length;
-      // no piece has been selected yet, so select this one and show possible moves
-      if(!selectedPiece && !gameOver){
-        selectedPiece = e.target;
-        if(selectedPiece.innerHTML == ''){
-          selectedPiece = '';
-          return;
-        }
-        selectedPiece.style.backgroundColor='deepskyblue';
-        calculateChecks();
-        checks.forEach(position => {
-          if(position == document.getElementById(turn == 'White' ? 'K' : 'k').parentNode)
-            teamInCheck = true;
-        });
-        calculatePins();
-        calculateMoves(selectedPiece);
-        if(checks.length != 0 && teamInCheck && selectedPiece?.firstChild?.id.toLowerCase() != 'k'){
-          moves = moves.filter(move => checks.includes(move));
-        }
-        if(pinnedPieces[parseInt(selectedPiece.getAttribute('square-id'))][0] != 0 &&
-            pinnedPieces[parseInt(selectedPiece.getAttribute('square-id'))][1] != 0){
-          moves = moves.filter(move => pinnedPieces.map(pair => pair[0])[parseInt(move.getAttribute('square-id'))] != 0);
-        }
-        colorMoves();
+function calculateColorMoves(color){
+  let allMoves = [];
+  let allColorPieces = document.querySelectorAll(`div[color='${color.toLowerCase()}']`);
+
+  // so we can filter moves for pinned pieces accordingly
+  calculatePins();
+
+  // calculates all pieces except for the king since we want king moves to be considered last
+  allColorPieces.forEach(piece => {
+    if(piece.id.toLowerCase() != 'k'){
+      let moves = calculateMovesChecks(piece.parentNode);
+      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
+        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
       }
-      // there is already a selected piece, so check if the move the player makes is valid
-      else if(!gameOver){
-        selectedPiece.style.backgroundColor = '';
-        if(moves.includes(destination)){
-          numHalfMoves++;
-          numMoves++;
-          historyMove++;
-          const color = selectedPiece.firstChild.getAttribute("color");
-          if(color == turn.toLowerCase()){
-            if(selectedPiece.firstChild.id.toLowerCase() == 'p' || destination.firstChild)
-              numHalfMoves = 0;
-            switchTurns();
-            makeMove(selectedPiece, destination, true);
-            calculateChecks();
-            gameOver = checkForCheckMate();
-            if(checks.length > 0 && gameOver){
-              switchTurns();
-              checkmate.play();
-            }
-            else if(gameOver || numHalfMoves == 100){
-              scatter.play();
-              draw = true;
-            }
-            else if(checks.length > 0){
-              check.play();
-            }
-            else if(pieces != allPieces.length){
-              capture.play();
-            }
-            else
-              color == 'white' ? selfMove.play() : oppMove.play();
-            if(!gameOver){
-              if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
-                setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
-              document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
-              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
-            }
+      moves.forEach(move => {
+        if(checks.length > 0){
+          if(checks.includes(move)){
+            allMoves.push({start: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
           }
         }
-        allSquares.forEach(square => {
-          square.style.backgroundColor = '';
-        });
-        moves = [];
-        selectedPiece = '';
-        if(draw){
-          document.getElementById('turn').innerHTML = `It's a Draw!`;
-          document.getElementById('turn').style.fontSize = '30px';
-          setTimeout(function() {alert(`It's a Draw!`)}, 100);
+        else{
+          allMoves.push({start: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
         }
-        if(!draw && gameOver){
-          document.getElementById('turn').innerHTML = `${turn} Wins!`;
-          document.getElementById('turn').style.fontSize = '30px';
-          setTimeout(function() {alert(`${turn} wins!`)}, 100);
-        }
-      }
-    });
+      });
+    }
   });
+
+  // deals with calculating king moves
+  let kingPiece = '';
+  color.toLowerCase() == 'white' ? kingPiece = 'K' : kingPiece = 'k';
+  let kingMoves = calculateMovesChecks(document.getElementById(kingPiece).parentNode);
+  let kingPosition = document.getElementById(kingPiece).parentNode.getAttribute("square-id");
+  kingMoves.forEach(move => {
+    allMoves.push({start: kingPosition, destination: move.getAttribute("square-id")});
+  });
+  
+  return allMoves;
 }
-listenOnSquares();
 
 /**
- * Calculates and makes the move for the bot
+ * Changes the background color of each square in the moves array to crimson.
  */
-document.addEventListener("playerMoved", function () {
-  if(historyMove == gameStates.length - 1){
-    let botMove = makeBotMove(turn);
-    let botPiece = document.querySelector(`[square-id="${botMove.piece}"]`);
-    let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-    botPiece.click();
-    botDestination.click();
+function colorMoves() {
+  moves.forEach(square => {
+    square.style.backgroundColor = 'crimson';
+  });
+}
+
+/**
+ * Switches the turns between 'White' and 'Black' and updates the turn display.
+ */
+function switchTurns() {
+  if (turn === 'White') {
+    turn = 'Black';
+  } else {
+    turn = 'White';
   }
-});
+  document.getElementById('turn').innerHTML = `${turn}'s Turn`;
+}
+
+/**
+ * Calculates the checks in the chess game which updates the global checks array
+ */
+function calculateChecks() {
+  allPieces = document.querySelectorAll(".piece");
+  checks = [];
+  allPieces.forEach(piece => {
+    calculateMovesChecks(piece.parentNode);
+  });
+}
+
+/**
+ * Checks if the current game state is a checkmate or draw.
+ * 
+ * @returns {boolean} Returns true if the game state is a checkmate or draw, false otherwise.
+ */
+function checkForCheckMateOrDraw(){
+  let possibleMoves = [];
+  possibleMoves = calculateColorMoves(turn);
+  return possibleMoves.length == 0;
+}
