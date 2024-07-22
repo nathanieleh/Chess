@@ -111,7 +111,6 @@ function updateFEN(){
   });
   if(emptySquares > 0)
     currFEN += emptySquares.toString();
-  console.log(turn);
   if(turn == 'White'){
     currFEN += ' w';
   }
@@ -182,7 +181,6 @@ function createBoard(FENCode, startingBoard) {
     let fileNumber = file.charCodeAt(0) - 'a'.charCodeAt(0);
     let rankNumber = 8 - parseInt(rank);
     let positionNumber = fileNumber + rankNumber * 8;
-    console.log(positionNumber, 'enpassant');
     if(turn == 'White')
       document.querySelector(`div[square-id="${positionNumber + 8}"]`).firstChild.setAttribute('enpassant', 'true');
     else

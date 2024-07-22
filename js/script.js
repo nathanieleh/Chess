@@ -84,6 +84,10 @@ buttonPrevious.addEventListener("click", function () {
     historyMove % 2 == 1 ? selfMove.play() : oppMove.play();
     historyMove--;
     createBoard(gameStates[historyMove], false);
+    console.log(gameStates[historyMove]);
+    console.log(pinnedPieces, 'pinned pieces');
+    console.log(attackedSquares, 'attacked squares');
+    console.log(defendedPieces, 'defended pieces');
     document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
     document.getElementById("evaluation").innerHTML = `Evaluation: ${historyMove == 0 ? 0 : evaluateBoard(turn).toFixed(2)}`;
   }
@@ -94,11 +98,14 @@ buttonNext.addEventListener("click", function () {
     historyMove % 2 == 1 ? selfMove.play() : oppMove.play();
     historyMove++;
     createBoard(gameStates[historyMove], false);
+    if(historyMove == gameStates.length - 1)
+      listenOnSquares();
+    console.log(pinnedPieces, 'pinned pieces');
+    console.log(attackedSquares, 'attacked squares');
+    console.log(defendedPieces, 'defended pieces');
     document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
     document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
   }
-  if(historyMove == gameStates.length - 1)
-    listenOnSquares();
 });
 
 // piece that has been selected by the user / bot so we know which moves to show
@@ -127,11 +134,11 @@ let pinnedPieces = new Array(64).fill([0,0]);
 // attackedSquares[1] = whether square is attacked by white, stored as "white" if true
 // attackedSquares[2] = whether square is attacked by black, stored as "black" if true
 // attackedSquares[3] = pieces attacking square
-let attackedSquares = new Array(64).fill([0,0,0,[]]);
+let attackedSquares = new Array(64).fill([0,0,0,new Array()]);
 
 // defendedPieces[0] = square defended
 // defendedPieces[1] = pieces defending square
-let defendedPieces = new Array(64).fill([0,[]]);
+let defendedPieces = new Array(64).fill([0,new Array()]);
 
 // all audio files used during play
 let capture = new Audio('./audio/capture.mp3');
@@ -154,7 +161,6 @@ function listenOnSquares() {
   allSquares.forEach(square => {
     square.addEventListener("click", function (e) {
       let destination = e.target;
-      console.log(destination, 'destination');
       let teamInCheck = false;
       let pieces = allPieces.length;
       // no piece has been selected yet, so select this one and show possible moves
@@ -277,7 +283,6 @@ document.addEventListener("playerMoved", function () {
     let botMove = makeBotMove(turn);
     let botStart = document.querySelector(`[square-id="${botMove.start}"]`);
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
-    console.log('botMove');
     botStart.click();
     botDestination.click();
   }
@@ -400,8 +405,8 @@ function calculateMovesChecks(selectedSquare) {
  * Calculates attacked and defended squares/pieces and updates the global attack and defense arrays
  */
 function calculateAttacksDefense(){
-  attackedSquares = new Array(64).fill([0,0,0]);
-  defendedPieces = new Array(64).fill(0);
+  attackedSquares = new Array(64).fill([0,0,0,new Array()]);
+  defendedPieces = new Array(64).fill([0,new Array()]);
   allPieces = document.querySelectorAll(".piece");
   allPieces.forEach(piece => {
     let id = parseInt(piece.parentNode.getAttribute("square-id"));
@@ -549,60 +554,77 @@ function rookAttacksDefense(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
+  let rookPiece = document.querySelector(`[square-id="${id}"]`).firstChild;
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset;
     if(col + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(rookPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
     }
   }
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset;
     if(col + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(rookPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
     }
   }
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset*8;
     if(row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(rookPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
     }
   }
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset*8;
     if(row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(rookPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(rookPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(rookPiece)];
     }
   }
 }
@@ -811,60 +833,77 @@ function bishopAttacksDefense(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
+  let bishopPiece = document.querySelector(`[square-id="${id}"]`).firstChild;
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset * 9;
     if(col + offset >= 0 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(bishopPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
     }
   }
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset * 9;
     if(col + offset <= 7 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(bishopPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
     }
   }
   for(let offset = -1; offset > -8; offset--){
     newId = id + offset * 7;
     if(col - offset <= 7 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(bishopPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
     }
   }
   for(let offset = 1; offset < 8; offset++){
     newId = id + offset * 7;
     if(col - offset >= 0 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(bishopPiece)];
         break;
       }
       if(allSquares[newId].firstChild){
-        color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+        color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
         break;
       }
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(bishopPiece)] :
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(bishopPiece)];
     }
   }
 }
@@ -1101,77 +1140,94 @@ function knightAttacksDefense(id, color){ // -6, -10, -15, -17, 6, 10, 15, 17
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
+  let knightPiece = document.querySelector(`[square-id="${id}"]`).firstChild;
   newId = id - 6;
   if(col + 2 <= 7 && row - 1 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
   newId = id - 10;
   if(col - 2 >= 0 && row - 1 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
   newId = id - 15;
   if(col + 1 <= 7 && row - 2 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
   newId = id - 17;
   if(col - 1 >= 0 && row - 2 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
   newId = id + 6;
   if(col - 2 >= 0 && row + 1 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
   newId = id + 10;
   if(col + 2 <= 7 && row + 1 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
   newId = id + 15;
   if(col - 1 >= 0 && row + 2 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
   newId = id + 17;
   if(col + 1 <= 7 && row + 2 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(knightPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(knightPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(knightPiece)];
   }
 }
 
@@ -1189,7 +1245,7 @@ function kingMovesChecks(id, color){
   newId = id - 1;
   if(col - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1202,7 +1258,7 @@ function kingMovesChecks(id, color){
   newId = id + 1;
   if(col + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1215,7 +1271,7 @@ function kingMovesChecks(id, color){
   newId = id - 8;
   if(row - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1228,7 +1284,7 @@ function kingMovesChecks(id, color){
   newId = id + 8;
   if(row + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1241,7 +1297,7 @@ function kingMovesChecks(id, color){
   newId = id + 9;
   if(col + 1 <= 7 && row + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1254,7 +1310,7 @@ function kingMovesChecks(id, color){
   newId = id + 7;
   if(col - 1 >= 0 && row + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1267,7 +1323,7 @@ function kingMovesChecks(id, color){
   newId = id - 7;
   if(col + 1 <= 7 && row - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1280,7 +1336,7 @@ function kingMovesChecks(id, color){
   newId = id - 9;
   if(col - 1 >= 0 && row - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1320,77 +1376,94 @@ function kingAttacksDefense(id, color){
   let newId = id;
   const row = Math.floor(id / 8);
   const col = id % 8;
+  let kingPiece = document.querySelector(`[square-id="${id}"]`).firstChild;
   newId = id - 1;
   if(col - 1 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+        defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
   newId = id + 1;
   if(col + 1 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
   newId = id - 8;
   if(row - 1 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
   newId = id + 8;
   if(row + 1 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
   newId = id + 9;
   if(col + 1 <= 7 && row + 1 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
   newId = id + 7;
   if(col - 1 >= 0 && row + 1 <= 7){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
   newId = id - 7;
   if(col + 1 <= 7 && row - 1 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
   newId = id - 9;
   if(col - 1 >= 0 && row - 1 >= 0){
     if(allSquares[newId].firstChild &&
       allSquares[newId].firstChild.getAttribute("color") == color){
-      defendedPieces[newId] = allSquares[newId];
+      defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(kingPiece)];
     }
     else
-      color == 'white' ? attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2]] : attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color];
+      color == 'white' ?
+      attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(kingPiece)] :
+      attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(kingPiece)];
   }
 }
 
@@ -1503,69 +1576,71 @@ function pawnMovesChecks(id, color){
  */
 function pawnAttacksDefense(id, color){
   let newId = id;
-  const row = Math.floor(id / 8);
   const col = id % 8;
+  let pawnPiece = document.querySelector(`[square-id="${id}"]`).firstChild;
   switch(color) {
     case "white":
       // checks if there is a piece on its diagonals or en passant
       newId = id - 7;
       if(col + 1 <= 7){
-        attackedSquares[newId] = [allSquares[newId], color, allSquares[newId][2]];
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(pawnPiece)];
       }
-      else if(col + 1 <= 7 && allSquares[newId].firstChild &&
+      if(col + 1 <= 7 && allSquares[newId].firstChild &&
         allSquares[newId].firstChild.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+          defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(pawnPiece)];
       }
       if(col + 1 <= 7 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id + 1].firstChild.getAttribute("color") != color){
-          attackedSquares[id + 1] = [allSquares[id + 1], color, allSquares[id + 1][2]];
+          attackedSquares[id + 1] = [allSquares[id + 1], color, attackedSquares[id + 1][2], attackedSquares[id + 1][3].concat(pawnPiece)];
       }
       newId = id - 9;
       if(col - 1 >= 0){
-        attackedSquares[newId] = [allSquares[newId], color, allSquares[newId][2]];
+        attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(pawnPiece)];
       }
-      else if(col - 1 >= 0 && allSquares[newId].firstChild &&
+      if(col - 1 >= 0 && allSquares[newId].firstChild &&
         allSquares[newId].firstChild.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+          defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(pawnPiece)];
       }
       if(col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id - 1].firstChild.getAttribute("color") != color){
-          attackedSquares[id - 1] = [allSquares[id - 1], color, allSquares[id - 1][2]];
+          attackedSquares[id - 1] = [allSquares[id - 1], color, attackedSquares[id - 1][2], attackedSquares[id - 1][3].concat(pawnPiece)];
       }
       break;
     case "black":
       // checks if there is a piece on its diagonals or en passant
       newId = id + 7;
       if(col - 1 >= 0){
-        attackedSquares[newId] = [allSquares[newId], allSquares[newId][1], color];
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(pawnPiece)];
       }
-      else if(col - 1 >= 0 && allSquares[newId].firstChild &&
+      if(col - 1 >= 0 && allSquares[newId].firstChild &&
         allSquares[newId].firstChild.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+          defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(pawnPiece)];
       }
       if(col - 1 >= 0 && allSquares[id - 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id - 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id - 1].firstChild.getAttribute("color") != color){
-          attackedSquares[id - 1] = [allSquares[id - 1], allSquares[id - 1][1], color];
+          attackedSquares[id - 1] = [allSquares[id - 1], attackedSquares[id - 1][1], color, attackedSquares[id - 1][3].concat(pawnPiece)];
       }
       newId = id + 9;
       if(col + 1 <= 7){
-        attackedSquares[newId] = [allSquares[newId], allSquares[newId][1], color];
+        attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(pawnPiece)];
       }
-      else if(col + 1 <= 7 && allSquares[newId].firstChild &&
+      if(col + 1 <= 7 && allSquares[newId].firstChild &&
         allSquares[newId].firstChild.getAttribute("color") == color){
-        defendedPieces[newId] = allSquares[newId];
+          defendedPieces[newId] = [allSquares[newId], defendedPieces[newId][1].concat(pawnPiece)];
       }
       if(col + 1 <= 7 && allSquares[id + 1].firstChild?.getAttribute("id").toLowerCase() == 'p' &&
         allSquares[id + 1].firstChild.getAttribute("enpassant") == 'true' &&
         allSquares[id + 1].firstChild.getAttribute("color") != color){
-          attackedSquares[id + 1] = [allSquares[id + 1], allSquares[id + 1][1], color];
+          attackedSquares[id + 1] = [allSquares[id + 1], attackedSquares[id + 1][1], color, attackedSquares[id + 1][3].concat(pawnPiece)];
       }
       break;
   }
 }
+
+let calculatedMoves = 0;
 
 /**
  * Chooses a move for the bot player.
@@ -1595,6 +1670,7 @@ function makeBotMove(botColor) {
 
     // determines the best score for the opponent given the new position
     let oppScore = searchMoves(1, -Infinity, Infinity);
+    console.log('bestOppResponse', oppScore);
 
     // undoes the previous move made
     gameStates.pop();
@@ -1608,6 +1684,8 @@ function makeBotMove(botColor) {
     }
   }
   console.log(bestMove, gameStates);
+  console.log(calculatedMoves, 'number of positions calculated');
+  calculatedMoves = 0;
   return bestMove;
 }
 
@@ -1623,8 +1701,10 @@ function makeBotMove(botColor) {
 function searchMoves(depth, alpha, beta){
   let allMoves = [];
   let score = 0;
+  let bestMove = 0;
   if(depth == 0){
     // the line is complete so return the final position
+    calculatedMoves++;
     return evaluateBoard(turn);
   }
   allMoves = calculateColorMoves(turn);
@@ -1635,7 +1715,6 @@ function searchMoves(depth, alpha, beta){
     let destination = document.querySelector(`[square-id="${move.destination}"]`);
     switchTurns();
     makeMove(start, destination);
-    console.log(move);
 
     // search through the new position
     score = -searchMoves(depth - 1, -beta, -alpha);
@@ -1647,14 +1726,16 @@ function searchMoves(depth, alpha, beta){
 
     if(score >= beta){
       // this score is too bad for the player so we cut this calculation short
-      console.log("snip");
+      console.log(beta, "snip");
       return beta;
     }
     if(score > alpha){
       // store this as the new best value achievable
+      bestMove = move;
       alpha = score;
     }
   }
+  console.log(bestMove, 'bestMove for opponent');
   return alpha;
 }
 
@@ -1671,49 +1752,61 @@ function evaluateBoard(color){
   let score = countPieceVal('white') - countPieceVal('black');
   calculateAttacksDefense();
   for(let i = 0; i < attackedSquares.length; i++){
-    if(attackedSquares[i][0] != 0 && attackedSquares[i][0].innerHTML != '' && defendedPieces[i] == 0){
-      let attackedPieceCol = attackedSquares[i][0].firstChild.getAttribute('color');
-      let pieceType = attackedSquares[i][0].firstChild.id.toLowerCase();
-      switch(pieceType){
-        case 'p':
-          if(attackedPieceCol == "white")
-            score -= 1;
-          else if(attackedPieceCol == 'black')
-            score += 1;
-          break;
-        case 'r':
-          if(attackedPieceCol == "white")
-            score -= 5;
-          else if(attackedPieceCol == 'black')
-            score += 5;
-          break;
-        case 'n':
-          if(attackedPieceCol == "white")
-            score -= 3;
-          else if(attackedPieceCol == 'black')
-            score += 3;
-          break;
-        case 'b':
-          if(attackedPieceCol == "white")
-            score -= 3;
-          else if(attackedPieceCol == 'black')
-            score += 3;
-          break;
-        case 'q':
-          if(attackedPieceCol == "white")
-            score -= 9;
-          else if(attackedPieceCol == 'black')
-            score += 9;
-        case 'k': 
-          if(attackedPieceCol == "white")
-            score -= 5;
-          else if(attackedPieceCol == 'black')
-            score += 5;
-          break;
-      }
+    if(attackedSquares[i][0] != 0 && attackedSquares[i][0].innerHTML != ''){
+      calculateCaptures(i);
     }
   }
   return score * playerPerspective;
+}
+
+/**
+ * Calculates squares that are attacked and returns a number after series of captures are evaluated
+ * 
+ * @param {number} squareId - the square position
+ * @returns {number} - the evaluation after calculating the specific square
+ */
+function calculateCaptures(squareId){
+  let piece = attackedSquares[squareId][0].firstChild;
+  let attackingPieces = attackedSquares[squareId][3].map(piece => pieceScore(piece)).sort();
+  let defendingPieces = defendedPieces[squareId][1].map(piece => pieceScore(piece)).sort();
+  let attackingScore = 0;
+  let defendingScore = 0;
+  attackingPieces.forEach(attacker => {
+    attackingScore += pieceScore(attacker);
+  });
+  defendingPieces.forEach(defender => {
+    defendingScore += pieceScore(defender);
+  });
+  return piece + attackingScore - defendingScore;
+}
+
+/**
+ * Calculates the score of the given piece
+ * 
+ * @param {Object} piece - piece to find value of
+ * @returns {number} - score of the piece
+ */
+function pieceScore(piece){
+  switch(piece.id){
+    case 'p':
+    case 'P':
+      return 1;
+    case 'r':
+    case 'R':
+      return 5;
+    case 'n':
+    case 'N':
+      return 3;
+    case 'b':
+    case 'B':
+      return 3;
+    case 'q':
+    case 'Q':
+      return 9;
+    case 'k':
+    case 'K':
+      return 0;
+  }
 }
 
 /**
@@ -1728,25 +1821,9 @@ function countPieceVal(color){
     allBlack = document.querySelectorAll("div[color='black']");
     allBlack.forEach(piece => {
       let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
-      switch(piece.id){
-        case 'p':
-          score += 1;
-          const row = Math.floor(squareId / 8);
-          score += row * .1;
-          break;
-        case 'r':
-          score += 5;
-          break;
-        case 'n':
-          score += 3;
-          break;
-        case 'b':
-          score += 3;
-          break;
-        case 'q':
-          score += 9;
-          break;
-      }
+      score += pieceScore(piece);
+      if(piece.id == 'p')
+        score += Math.floor(squareId / 8) * .1;
       let moves = calculateMovesChecks(piece.parentNode);
       if(pinnedPieces[squareId][1] != 0){
         moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
@@ -1758,25 +1835,9 @@ function countPieceVal(color){
     allWhite = document.querySelectorAll("div[color='white']");
     allWhite.forEach(piece => {
       let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
-      switch(piece.id.toLowerCase()){
-        case 'p':
-          score += 1;
-          const row = Math.floor(squareId / 8);
-          score += (8 - row) * .1;
-          break;
-        case 'r':
-          score += 5;
-          break;
-        case 'n':
-          score += 3;
-          break;
-        case 'b':
-          score += 3;
-          break;
-        case 'q':
-          score += 9;
-          break;
-      }
+      score += pieceScore(piece);
+      if(piece.id == 'p')
+        score += (8 - Math.floor(squareId / 8)) * .1;
       let moves = calculateMovesChecks(piece.parentNode);
       if(pinnedPieces[squareId][1] != 0){
         moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
@@ -1828,7 +1889,6 @@ function calculateColorMoves(color){
   kingMoves.forEach(move => {
     allMoves.push({start: kingPosition, destination: move.getAttribute("square-id")});
   });
-  
   return allMoves;
 }
 
