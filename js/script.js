@@ -1582,7 +1582,7 @@ function pawnAttacksDefense(id, color){
     case "white":
       // checks if there is a piece on its diagonals or en passant
       newId = id - 7;
-      if(col + 1 <= 7){
+      if(col + 1 <= 7 && (!allSquares[newId].firstChild || allSquares[newId].firstChild.getAttribute("color") != color)){
         attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(pawnPiece)];
       }
       if(col + 1 <= 7 && allSquares[newId].firstChild &&
@@ -1595,7 +1595,7 @@ function pawnAttacksDefense(id, color){
           attackedSquares[id + 1] = [allSquares[id + 1], color, attackedSquares[id + 1][2], attackedSquares[id + 1][3].concat(pawnPiece)];
       }
       newId = id - 9;
-      if(col - 1 >= 0){
+      if(col - 1 >= 0 && (!allSquares[newId].firstChild || allSquares[newId].firstChild.getAttribute("color") != color)){
         attackedSquares[newId] = [allSquares[newId], color, attackedSquares[newId][2], attackedSquares[newId][3].concat(pawnPiece)];
       }
       if(col - 1 >= 0 && allSquares[newId].firstChild &&
@@ -1611,7 +1611,7 @@ function pawnAttacksDefense(id, color){
     case "black":
       // checks if there is a piece on its diagonals or en passant
       newId = id + 7;
-      if(col - 1 >= 0){
+      if(col - 1 >= 0 && (!allSquares[newId].firstChild || allSquares[newId].firstChild.getAttribute("color") != color)){
         attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(pawnPiece)];
       }
       if(col - 1 >= 0 && allSquares[newId].firstChild &&
@@ -1624,7 +1624,7 @@ function pawnAttacksDefense(id, color){
           attackedSquares[id - 1] = [allSquares[id - 1], attackedSquares[id - 1][1], color, attackedSquares[id - 1][3].concat(pawnPiece)];
       }
       newId = id + 9;
-      if(col + 1 <= 7){
+      if(col + 1 <= 7 && (!allSquares[newId].firstChild || allSquares[newId].firstChild.getAttribute("color") != color)){
         attackedSquares[newId] = [allSquares[newId], attackedSquares[newId][1], color, attackedSquares[newId][3].concat(pawnPiece)];
       }
       if(col + 1 <= 7 && allSquares[newId].firstChild &&
@@ -1753,7 +1753,8 @@ function evaluateBoard(color){
   calculateAttacksDefense();
   for(let i = 0; i < attackedSquares.length; i++){
     if(attackedSquares[i][0] != 0 && attackedSquares[i][0].innerHTML != ''){
-      calculateCaptures(i);
+      let calculatedSquare = calculateCaptures(i);
+      score += calculatedSquare;
     }
   }
   return score * playerPerspective;
@@ -1767,17 +1768,36 @@ function evaluateBoard(color){
  */
 function calculateCaptures(squareId){
   let piece = attackedSquares[squareId][0].firstChild;
+  let playerPerspective = 1;
+  piece.getAttribute('color') == 'white' ? playerPerspective = 1 : playerPerspective = -1;
+
+  let attacking = false;
+  let pieceToCapture = 0;
   let attackingPieces = attackedSquares[squareId][3].map(piece => pieceScore(piece)).sort();
   let defendingPieces = defendedPieces[squareId][1].map(piece => pieceScore(piece)).sort();
   let attackingScore = 0;
   let defendingScore = 0;
-  attackingPieces.forEach(attacker => {
-    attackingScore += pieceScore(attacker);
-  });
-  defendingPieces.forEach(defender => {
-    defendingScore += pieceScore(defender);
-  });
-  return piece + attackingScore - defendingScore;
+  attackingScore += pieceScore(piece);
+  pieceToCapture = attackingPieces[0];
+  while(attackingPieces.length != 0 && defendingPieces.length != 0){
+    if(attacking && (defendingPieces[0] > attackingPieces[0] || defendingPieces.length == 1)){
+      attackingScore += defendingPieces.shift();
+      attacking = false;
+      pieceToCapture = attackingPieces[0];
+    }
+    else if(attacking) {
+      break;
+    }
+    else if(defendingPieces[0] < attackingPieces[0] || attackingPieces.length == 1){
+      defendingScore += attackingPieces.shift();
+      attacking = true;
+      pieceToCapture = defendingPieces[0];
+    }
+    else{
+      break;
+    }
+  }
+  return attackingScore - defendingScore > 0 ? -pieceScore(piece) * playerPerspective : 0;
 }
 
 /**
@@ -1805,6 +1825,8 @@ function pieceScore(piece){
       return 9;
     case 'k':
     case 'K':
+      return 10;
+    default:
       return 0;
   }
 }
@@ -1899,6 +1921,14 @@ function colorMoves() {
   moves.forEach(square => {
     square.style.backgroundColor = 'crimson';
   });
+  // attackedSquares.forEach(square => {
+  //   if(square[0] != 0)
+  //   square[0].style.backgroundColor = 'blue';
+  // });
+  // defendedPieces.forEach(piece => {
+  //   if(piece[0] != 0)
+  //   piece[0].style.backgroundColor = 'yellow';
+  // });
 }
 
 /**
