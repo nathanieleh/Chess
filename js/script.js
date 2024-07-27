@@ -1718,6 +1718,7 @@ function searchMoves(depth, alpha, beta){
 
     // search through the new position
     score = -searchMoves(depth - 1, -beta, -alpha);
+    console.log(score, 'potential position score');
 
     // undo the previous move made
     gameStates.pop();
@@ -1797,7 +1798,10 @@ function calculateCaptures(squareId){
       break;
     }
   }
-  return attackingScore - defendingScore > 0 ? -pieceScore(piece) * playerPerspective : 0;
+  if(attackingScore - defendingScore > 0){
+    return -pieceScore(piece) * playerPerspective;
+  }
+  return 0;
 }
 
 /**
@@ -1882,6 +1886,7 @@ function calculateColorMoves(color){
 
   // so we can filter moves for pinned pieces accordingly
   calculatePins();
+  calculateChecks();
 
   // calculates all pieces except for the king since we want king moves to be considered last
   allColorPieces.forEach(piece => {
