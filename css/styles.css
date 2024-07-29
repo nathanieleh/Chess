@@ -1,21 +1,79 @@
 body {
-  background-color: gray;
+  font-family: Arial, sans-serif;
+  background-color: #a0a0a0;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
 }
+
+h1 {
+  margin-bottom: 20px;
+}
+
+.options-menu {
+  background-color: rgb(215, 215, 215);
+  margin-inline: 10px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.option {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 .playerChoice {
-  border-radius: 1rem;
-  background-color: deepskyblue;
+  display: none;
 }
+
+#chessBoardContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
 #chessBoard {
   width: 400px;
   height: 400px;
-  display: flex;
+  display: none;
   flex-wrap: wrap;
+  justify-content: center;
+  border: 1px solid #000000;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
+
 .square {
   width: 50px;
   height: 50px;
-  display: flex;
-  justify-content: center;
 }
 
 .white {
@@ -30,6 +88,29 @@ svg {
   width: 40px;
   height: 40px;
   margin: 5px;
+}
+
+#historyMoves {
+  display: none;
+  background-color: rgb(215, 215, 215);
+  margin-inline: 10px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  max-height: 400px;
+}
+
+#information {
+  display: none;
+  flex-direction: column;
+  background-color: rgb(215, 215, 215);
+  margin-inline: 10px;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  max-height: 400px;
 }
 
 .piece {

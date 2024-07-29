@@ -22,58 +22,13 @@ let playerBlack = "Player";
 // delay between bot moves if site is running a bot game 
 let moveDelay = 0;
 
-// creates the starting position of the game
-createBoard(FENCode, true);
-document.getElementById('turn').innerHTML = `${turn}'s Turn`;
-
-// creates the dropdown menu for the user to select the opening they want to play
-const dropdown = document.getElementById('myDropdown');
-const openings = [
-  { value: startFEN, text: 'New Game' },
-  { value: 'rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2', text: 'Sicilian Defense' },
-  { value: 'rnbqkbnr/pppp1ppp/4p3/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2', text: 'French Defense' },
-  { value: 'rnbqkb1r/pppppp1p/5np1/8/2PP4/8/PP2PPPP/RNBQKBNR w KQkq - 1 3', text: 'King\'s Indian Defense' },
-  { value: '', text: 'Custom FEN Position'}
-];
-openings.forEach(option => {
-  const opt = document.createElement('option');
-  opt.value = option.value;
-  opt.textContent = option.text;
-  dropdown.appendChild(opt);
-});
-dropdown.addEventListener('change', function() {
-  const selectedOption = dropdown.value;
-  if(selectedOption == '')
-    FENCode = prompt("Enter FEN Code (MAKE SURE IT IS A VALID POSITION):");
-  else
-    FENCode = selectedOption;
-  gameStates = [];
-  createBoard(FENCode, true);
-  listenOnSquares();
-  gameStart.play();
-  document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
-  document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
-});
-
 // custom event so bot knows when to start its calculations for the current position
 const playerMoved = new CustomEvent("playerMoved");
 
 // event listeners for the buttons on the website
-const buttonWhite = document.getElementById('buttonWhite');
-const buttonBlack = document.getElementById('buttonBlack');
 const buttonStart = document.getElementById('buttonStart');
 const buttonPrevious = document.getElementById('previous');
 const buttonNext = document.getElementById('next');
-buttonWhite.innerHTML = `Click to Change White: ${playerWhite}`;
-buttonWhite.addEventListener("click", function () {
-  playerWhite == "Bot" ? playerWhite = "Player" : playerWhite = "Bot";
-  buttonWhite.innerHTML = `Click to Change White: ${playerWhite}`;
-});
-buttonBlack.innerHTML = `Click to Change Black: ${playerBlack}`;
-buttonBlack.addEventListener("click", function () {
-  playerBlack == "Bot" ? playerBlack = "Player" : playerBlack = "Bot";
-  buttonBlack.innerHTML = `Click to Change Black: ${playerBlack}`;
-});
 buttonStart.addEventListener("click", function () {
   if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
     document.dispatchEvent(new Event("playerMoved"));
@@ -108,17 +63,52 @@ buttonNext.addEventListener("click", function () {
   }
 });
 
+document.getElementById('optionsForm').addEventListener('submit', function(event) {
+  event.preventDefault();
+  const players = document.querySelector('input[name="players"]:checked').value;
+  switch(players){
+    case 'PvP':
+      playerWhite = 'Player';
+      playerBlack = 'Player';
+      break;
+    case 'PvAI':
+      playerWhite = 'Player';
+      playerBlack = 'Bot';
+      break;
+    case 'AIvP':
+      playerWhite = 'Bot';
+      playerBlack = 'Player';
+      break;
+    case 'AIvAI':
+      playerWhite = 'Bot';
+      playerBlack = 'Bot';
+      break;
+  }
+
+  createBoard(FENCode, true);
+  listenOnSquares();
+  document.getElementById('turn').innerHTML = `White's Turn`;
+  document.getElementById('numMoves').innerHTML = `Move 1`;
+  document.getElementById("evaluation").innerHTML = `Evaluation: 0`;
+  gameStart.play();
+  document.getElementById("chessBoard").style.display = 'flex';
+  document.getElementById("information").style.display = 'flex';
+  document.getElementById("historyMoves").style.display = 'flex';
+  document.querySelector('.options-menu').style.display = 'none';
+  document.getElementById('buttonStart').click();
+});
+
 // piece that has been selected by the user / bot so we know which moves to show
 let selectedSquare;
 
 // selection of pieces to keep track of (these will be redefined throughout runtime)
-let allPawns = document.querySelectorAll('.square #p, .square #P');
-let allPieces = document.querySelectorAll(".piece");
-let allBlack = document.querySelectorAll("div[color='black']");
-let allWhite = document.querySelectorAll("div[color='white']");
+let allPawns;
+let allPieces;
+let allBlack;
+let allWhite;
 
 // keeps track of all squares of the board (will also be redefined throughout runtime)
-let allSquares = document.querySelectorAll("div.square");
+let allSquares;
 
 // tells the website if the game has finished
 let gameOver = false;
@@ -158,6 +148,7 @@ let scatter = new Audio('./audio/scatter.mp3');
 function listenOnSquares() {
   let draw = false;
   allSquares = document.querySelectorAll("div.square");
+  allPieces = document.querySelectorAll(".piece");
   allSquares.forEach(square => {
     square.addEventListener("click", function (e) {
       let destination = e.target;
@@ -275,7 +266,6 @@ function listenOnSquares() {
     });
   });
 }
-listenOnSquares();
 
 // Calculates and makes the move for the bot
 document.addEventListener("playerMoved", function () {
@@ -1758,7 +1748,7 @@ function calculateDepthExtension(){
   allPieces = document.querySelectorAll(".piece");
   calculateChecks();
 
-  //! find a way to implement this without an infinite loop
+  //! find a way to implement this without an infinite loop, maybe modify the original calling method instead
   // we are reaching some sort of endgame so look more into the future
   // if(allPieces.length < 10){
   //   console.log('endgame');

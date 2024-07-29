@@ -7,16 +7,43 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <div id="chessBoard"></div>
-  <button class="playerChoice" id="buttonWhite">Click to Change White: Player</button>
-  <button class="playerChoice" id="buttonBlack">Click to Change Black: Player</button>
+  <div id="chessBoardContainer">
+    <div id="chessBoard"></div>
+  </div>
+  <div class="options-menu">
+    <h1>Chess Game Options</h1>
+    <form id="optionsForm">
+        <div class="option">
+          <div>
+            <label for="PvP">Player vs Player</label>
+            <input type="radio" id="PvP" name="players" value="PvP" checked>
+          </div>
+          <div>
+            <label for="PvAI">Player vs AI</label>
+            <input type="radio" id="PvAI" name="players" value="PvAI">
+          </div>
+          <div>
+            <label for="AIvP">AI vs Player</label>
+            <input type="radio" id="AIvP" name="players" value="AIvP">
+          </div>
+          <div>
+            <label for="AIvAI">AI vs AI</label>
+            <input type="radio" id="AIvAI" name="players" value="AIvAI">
+          </div>
+        </div>
+        <button type="submit">Start Game</button>
+    </form>
+  </div>
   <button class="playerChoice" id="buttonStart">Click to Start Bot Move</button>
-  <div id="turn">White's Turn</div>
-  <div id="numMoves">Move 1</div>
-  <div id="evaluation">Evaluation: 0</div>
-  <select id="myDropdown"></select>
-  <button id="previous">Previous</button>
-  <button id="next">Next</button>
+  <div id="information">
+    <div id="turn">White's Turn</div>
+    <div id="numMoves">Move 1</div>
+    <div id="evaluation">Evaluation: 0</div>
+  </div>
+  <div id="historyMoves">
+    <button id="previous">Previous</button>
+    <button id="next">Next</button>
+  </div>
   <script src="js/pieces.js"></script>
   <script src="js/board.js"></script>
   <script src="js/bot.js"></script>
