@@ -52,7 +52,7 @@ dropdown.addEventListener('change', function() {
   listenOnSquares();
   gameStart.play();
   document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
-  document.getElementById("evaluation").innerHTML = `Evaluation: ${selectedOption == startFEN ? 0 : evaluateBoard(turn).toFixed(2)}`;
+  document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
 });
 
 // custom event so bot knows when to start its calculations for the current position
@@ -89,7 +89,7 @@ buttonPrevious.addEventListener("click", function () {
     console.log(attackedSquares, 'attacked squares');
     console.log(defendedPieces, 'defended pieces');
     document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
-    document.getElementById("evaluation").innerHTML = `Evaluation: ${historyMove == 0 ? 0 : evaluateBoard(turn).toFixed(2)}`;
+    document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
   }
 });
 buttonNext.addEventListener("click", function () {
@@ -104,7 +104,7 @@ buttonNext.addEventListener("click", function () {
     console.log(attackedSquares, 'attacked squares');
     console.log(defendedPieces, 'defended pieces');
     document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
-    document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
+    document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
   }
 });
 
@@ -238,7 +238,8 @@ function listenOnSquares() {
                 setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
               }
               document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
-              document.getElementById("evaluation").innerHTML = `Evaluation: ${evaluateBoard(turn).toFixed(2)}`;
+              console.log(turn);
+              document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
             }
           }
           // reset all moves for the piece and deselect the square
@@ -281,6 +282,7 @@ document.addEventListener("playerMoved", function () {
   // checks to make sure we are not looking back at a previous position
   if(historyMove == gameStates.length - 1){
     let botMove = makeBotMove(turn);
+    console.log(botMove, 'chosen move');
     let botStart = document.querySelector(`[square-id="${botMove.start}"]`);
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
     botStart.click();
@@ -1649,12 +1651,9 @@ let calculatedMoves = 0;
  * @returns {Object} The move object containing the starting square and destination.
  */
 function makeBotMove(botColor) {
-  let allMoves = [];
-  let bestMove = {};
+  let allMoves = calculateColorMoves(botColor);
+  let bestMove = allMoves[0];
   let bestMinOppScore = Infinity;
-
-  // all possible moves have been calculated for the bot's position
-  allMoves = calculateColorMoves(botColor);
 
   // now sift through all future moves and find the best result
   for (let i = 0; i < allMoves.length; i++) {
@@ -1708,16 +1707,25 @@ function searchMoves(depth, alpha, beta){
     return evaluateBoard(turn);
   }
   allMoves = calculateColorMoves(turn);
+  if(allMoves.length == 0){
+    // no moves left so the game would be over in this position
+    calculatedMoves++;
+    return -Infinity;
+  }
   for(let i = 0; i < allMoves.length; i++){
     // chooses a new move to start a new line of calculation
     let move = allMoves[i];
+    console.log(move, 'potential move');
     let start = document.querySelector(`[square-id="${move.start}"]`);
     let destination = document.querySelector(`[square-id="${move.destination}"]`);
     switchTurns();
     makeMove(start, destination);
 
+    // calculate whether or not to extend the depth of the search
+    let depthExtension = calculateDepthExtension();
+
     // search through the new position
-    score = -searchMoves(depth - 1, -beta, -alpha);
+    score = -searchMoves(depth - 1 + depthExtension, -beta, -alpha);
     console.log(score, 'potential position score');
 
     // undo the previous move made
@@ -1741,6 +1749,30 @@ function searchMoves(depth, alpha, beta){
 }
 
 /**
+ * Calculates a value to extend the depth of the search function based on the current position
+ * 
+ * @returns the number of moves to extend the search by
+ */
+function calculateDepthExtension(){
+  let extension = 0;
+  allPieces = document.querySelectorAll(".piece");
+  calculateChecks();
+
+  //! find a way to implement this without an infinite loop
+  // we are reaching some sort of endgame so look more into the future
+  // if(allPieces.length < 10){
+  //   console.log('endgame');
+  //   extension++;
+  // }
+  // there is a check so it is valuable to know where this ends up
+  if(checks.length > 0){
+    console.log('satisfy check')
+    extension++;
+  }
+  return extension;
+}
+
+/**
  * Calculates the evaluation of the current board for the bot to consider
  * 
  * @param color determines whether or not the evaluation should be for the white player or black player
@@ -1753,9 +1785,9 @@ function evaluateBoard(color){
   let score = countPieceVal('white') - countPieceVal('black');
   calculateAttacksDefense();
   for(let i = 0; i < attackedSquares.length; i++){
-    if(attackedSquares[i][0] != 0 && attackedSquares[i][0].innerHTML != ''){
+    if(attackedSquares[i][0] != 0 && attackedSquares[i][0].firstChild && attackedSquares[i][0].firstChild.id.toLowerCase() != 'k' && attackedSquares[i][0].firstChild.getAttribute('color') != color.toLowerCase()){
       let calculatedSquare = calculateCaptures(i);
-      score += calculatedSquare;
+      score += calculatedSquare / 2;
     }
   }
   return score * playerPerspective;
@@ -1773,7 +1805,6 @@ function calculateCaptures(squareId){
   piece.getAttribute('color') == 'white' ? playerPerspective = 1 : playerPerspective = -1;
 
   let attacking = false;
-  let pieceToCapture = 0;
   let attackingPieces = attackedSquares[squareId][3].map(piece => pieceScore(piece)).sort();
   let defendingPieces = defendedPieces[squareId][1].map(piece => pieceScore(piece)).sort();
   let attackingScore = 0;
@@ -1884,7 +1915,7 @@ function calculateColorMoves(color){
   let allMoves = [];
   let allColorPieces = document.querySelectorAll(`div[color='${color.toLowerCase()}']`);
 
-  // so we can filter moves for pinned pieces accordingly
+  // so we can filter moves for pieces accordingly
   calculatePins();
   calculateChecks();
 
@@ -1926,14 +1957,6 @@ function colorMoves() {
   moves.forEach(square => {
     square.style.backgroundColor = 'crimson';
   });
-  // attackedSquares.forEach(square => {
-  //   if(square[0] != 0)
-  //   square[0].style.backgroundColor = 'blue';
-  // });
-  // defendedPieces.forEach(piece => {
-  //   if(piece[0] != 0)
-  //   piece[0].style.backgroundColor = 'yellow';
-  // });
 }
 
 /**
