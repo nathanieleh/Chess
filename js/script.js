@@ -1,6 +1,6 @@
 // used for debugging purposes if I want to start the game with a custom position
-let FENCode = startFEN;
-// let FENCode = testFEN;
+// let FENCode = startFEN;
+let FENCode = testFEN;
 
 // keeps track of all positions run through in the current game so we can look back to previous positions of the same game
 let gameStates = [];
@@ -169,6 +169,7 @@ function listenOnSquares() {
           }
         });
         calculatePins();
+        console.log(checks, pinnedPieces);
         calculateMovesChecks(selectedSquare);
         if(checks.length != 0 && teamInCheck && selectedSquare?.firstChild?.id.toLowerCase() != 'k'){
           console.log(moves, 'possible moves');
@@ -179,6 +180,7 @@ function listenOnSquares() {
           moves = moves.filter(move => pinnedPieces.map(pair => pair[0])[parseInt(move.getAttribute('square-id'))] != 0);
         }
         colorMoves();
+        console.log(checks, 'test');
       }
 
       // there is already a selected square, so check if the move the player makes is valid
