@@ -1,6 +1,6 @@
 // used for debugging purposes if I want to start the game with a custom position
-// let FENCode = startFEN;
-let FENCode = testFEN;
+let FENCode = startFEN;
+// let FENCode = testFEN;
 
 // keeps track of all positions run through in the current game so we can look back to previous positions of the same game
 let gameStates = [];
