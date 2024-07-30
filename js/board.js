@@ -3,7 +3,7 @@ const startBoard = [64];
 
 
 const startFEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const testFEN = '1k6/pppb4/r7/8/8/8/7R/7K w - - 0 5';
+const testFEN = '1k6/3r4/r4Q2/3p4/4P3/3K4/8/8 b - - 0 5';
 let currFEN = '';
 
 /**

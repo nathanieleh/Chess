@@ -164,12 +164,14 @@ function listenOnSquares() {
         selectedSquare.style.backgroundColor='deepskyblue';
         calculateChecks();
         checks.forEach(position => {
-          if(position == document.getElementById(turn == 'White' ? 'K' : 'k').parentNode)
+          if(position == document.getElementById(selectedSquare.firstChild.getAttribute('color') == 'white' ? 'K' : 'k').parentNode){
             teamInCheck = true;
+          }
         });
         calculatePins();
         calculateMovesChecks(selectedSquare);
         if(checks.length != 0 && teamInCheck && selectedSquare?.firstChild?.id.toLowerCase() != 'k'){
+          console.log(moves, 'possible moves');
           moves = moves.filter(move => checks.includes(move));
         }
         if(pinnedPieces[parseInt(selectedSquare.getAttribute('square-id'))][0] != 0 &&
@@ -367,6 +369,7 @@ function calculateMovesChecks(selectedSquare) {
   let pieceType = selectedSquare.firstChild?.getAttribute("id").toLowerCase();
   let color = selectedSquare.firstChild?.getAttribute("color");
   let id = parseInt(selectedSquare.getAttribute("square-id"));
+
   // based on the piece type, add the proper moves for that piece to moves
   switch (pieceType) {
     case "r":
@@ -390,6 +393,27 @@ function calculateMovesChecks(selectedSquare) {
       pawnMovesChecks(id, color);
       break;
   }
+  
+  // in the instance that there is a double check, the only valid move is a king move
+  let checkCount = 0;
+  let checkColor = '';
+  checks.forEach(square => {
+    if(square.firstChild && square.firstChild.id.toLowerCase() != 'k'){
+      console.log(square);
+      checkCount++;
+    }
+    if(square.firstChild && square.firstChild.id == 'k'){
+      checkColor = 'black';
+    }
+    if(square.firstChild && square.firstChild.id == 'K'){
+      checkColor = 'white';
+    }
+  });
+  console.log(checkCount, 'checkCount');
+  if(checkCount > 1 && checkColor == color.toLowerCase() && pieceType != 'k'){
+    return [];
+  }
+
   return moves;
 }
 
@@ -1237,7 +1261,7 @@ function kingMovesChecks(id, color){
   newId = id - 1;
   if(col - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1250,7 +1274,7 @@ function kingMovesChecks(id, color){
   newId = id + 1;
   if(col + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1263,7 +1287,7 @@ function kingMovesChecks(id, color){
   newId = id - 8;
   if(row - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1276,7 +1300,7 @@ function kingMovesChecks(id, color){
   newId = id + 8;
   if(row + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1289,7 +1313,7 @@ function kingMovesChecks(id, color){
   newId = id + 9;
   if(col + 1 <= 7 && row + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1302,7 +1326,7 @@ function kingMovesChecks(id, color){
   newId = id + 7;
   if(col - 1 >= 0 && row + 1 <= 7){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1315,7 +1339,7 @@ function kingMovesChecks(id, color){
   newId = id - 7;
   if(col + 1 <= 7 && row - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
@@ -1328,7 +1352,7 @@ function kingMovesChecks(id, color){
   newId = id - 9;
   if(col - 1 >= 0 && row - 1 >= 0){
     if(!(allSquares[newId].firstChild?.getAttribute("color") == color)){
-      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0){
+      if(allSquares[newId].firstChild && defendedPieces[newId][0] == 0 && !checks.includes(newId)){
         moves.push(allSquares[newId]);
       }
       if(!(allSquares[newId].firstChild || checks.includes(allSquares[newId]) || checks.includes(newId))){
