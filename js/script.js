@@ -172,15 +172,39 @@ function listenOnSquares() {
         console.log(checks, pinnedPieces);
         calculateMovesChecks(selectedSquare);
         if(checks.length != 0 && teamInCheck && selectedSquare?.firstChild?.id.toLowerCase() != 'k'){
-          console.log(moves, 'possible moves');
           moves = moves.filter(move => checks.includes(move));
         }
-        if(pinnedPieces[parseInt(selectedSquare.getAttribute('square-id'))][0] != 0 &&
-            pinnedPieces[parseInt(selectedSquare.getAttribute('square-id'))][1] != 0){
-          moves = moves.filter(move => pinnedPieces.map(pair => pair[0])[parseInt(move.getAttribute('square-id'))] != 0);
+        let squareId = parseInt(selectedSquare.getAttribute('square-id'));
+        if(pinnedPieces[squareId][0] != 0 && pinnedPieces[squareId][1] >= 2){
+          let pinningId = 0;
+          let pinningColor = 0;
+          let pinLine = [];
+          pinnedPieces.forEach(element => {
+            if((element[1] == 1 || element[1] >= 3) && pinLine.length == 0 && element[0] != selectedSquare){
+              pinningId = parseInt(element[0].getAttribute('square-id'));
+              pinningColor = element[0].firstChild.getAttribute('color');
+              pinningType = element[0].firstChild.id.toLowerCase();
+              if(pinningType == 'r' || pinningType == 'q'){
+                pinLine = rookPins(pinningId, pinningColor);
+                console.log(pinLine, 'rook');
+              }
+              if(pinLine.length == 0 || !pinLine.includes(selectedSquare)){
+                pinLine = [];
+              }
+              if(pinLine.length == 0 && (pinningType == 'b' || pinningType == 'q')){
+                pinLine = bishopPins(pinningId, pinningColor);
+                console.log(pinLine, 'bishop');
+              }
+              if(pinLine.length == 0 || !pinLine.includes(selectedSquare)){
+                pinLine = [];
+              }
+            }
+          });
+          console.log(moves, 'before');
+          moves = moves.filter(move => pinLine.includes(move));
+          console.log(moves, 'after');
         }
         colorMoves();
-        console.log(checks, 'test');
       }
 
       // there is already a selected square, so check if the move the player makes is valid
@@ -401,7 +425,6 @@ function calculateMovesChecks(selectedSquare) {
   let checkColor = '';
   checks.forEach(square => {
     if(square.firstChild && square.firstChild.id.toLowerCase() != 'k'){
-      console.log(square);
       checkCount++;
     }
     if(square.firstChild && square.firstChild.id == 'k'){
@@ -411,7 +434,6 @@ function calculateMovesChecks(selectedSquare) {
       checkColor = 'white';
     }
   });
-  console.log(checkCount, 'checkCount');
   if(checkCount > 1 && checkColor == color.toLowerCase() && pieceType != 'k'){
     return [];
   }
@@ -655,6 +677,7 @@ function rookAttacksDefense(id, color){
  */
 function rookPins(id, color){
   let pinLine = [];
+  let pins = [];
   let pinned = -1;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -663,17 +686,27 @@ function rookPins(id, color){
     newId = id + offset;
     if(col + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -688,17 +721,27 @@ function rookPins(id, color){
     newId = id + offset;
     if(col + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -713,17 +756,27 @@ function rookPins(id, color){
     newId = id + offset*8;
     if(row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -738,17 +791,27 @@ function rookPins(id, color){
     newId = id + offset*8;
     if(row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -757,6 +820,7 @@ function rookPins(id, color){
           pinned = newId;
     }
   }
+  return pins;
 }
 
 /**
@@ -934,6 +998,7 @@ function bishopAttacksDefense(id, color){
  */
 function bishopPins(id, color){
   let pinLine = [];
+  let pins = [];
   let pinned = -1;
   const row = Math.floor(id / 8);
   const col = id % 8;
@@ -942,17 +1007,27 @@ function bishopPins(id, color){
     newId = id + offset * 9;
     if(col + offset >= 0 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -967,17 +1042,27 @@ function bishopPins(id, color){
     newId = id + offset * 9;
     if(col + offset <= 7 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -992,17 +1077,27 @@ function bishopPins(id, color){
     newId = id + offset * 7;
     if(col - offset <= 7 && row + offset >= 0){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -1017,17 +1112,27 @@ function bishopPins(id, color){
     newId = id + offset * 7;
     if(col - offset >= 0 && row + offset <= 7){
       if(allSquares[newId].firstChild?.getAttribute("color") == color) break;
-      if(pinned == -1){
+      if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() != 'k')
         pinLine.push(newId);
-      }
       if(allSquares[newId].firstChild?.getAttribute("id").toLowerCase() == 'k' && pinned != -1){
         pinLine.forEach(element => {
-          if(element != pinned)
+          if(!allSquares[element].firstChild)
             pinnedPieces[element] = [allSquares[element], 0];
-          else
-            pinnedPieces[element] = [allSquares[element], pinnedPieces[element][1] + 1];
+          else{
+            if(pinnedPieces[element][1] == 1)
+              pinnedPieces[element] = [allSquares[element], 3];
+            else
+              pinnedPieces[element] = [allSquares[element], 2];
+          }
         });
-        pinnedPieces[id] = [allSquares[id], 0];
+        if(pinnedPieces[id][1] == 2)
+          pinnedPieces[id] = [allSquares[id], 3];
+        else
+          pinnedPieces[id] = [allSquares[id], 1];
+        pinLine.forEach(id => {
+          pins.push(allSquares[id]);
+        });
+        pins.push(allSquares[id]);
       }
       else if(allSquares[newId].firstChild && pinned != -1)
           break;
@@ -1036,6 +1141,7 @@ function bishopPins(id, color){
           pinned = newId;
     }
   }
+  return pins;
 }
 
 /**
@@ -1801,7 +1907,10 @@ function evaluateBoard(color){
   let score = countPieceVal('white') - countPieceVal('black');
   calculateAttacksDefense();
   for(let i = 0; i < attackedSquares.length; i++){
-    if(attackedSquares[i][0] != 0 && attackedSquares[i][0].firstChild && attackedSquares[i][0].firstChild.id.toLowerCase() != 'k' && attackedSquares[i][0].firstChild.getAttribute('color') != color.toLowerCase()){
+    if(attackedSquares[i][0] != 0 &&
+        attackedSquares[i][0].firstChild &&
+        attackedSquares[i][0].firstChild.id.toLowerCase() != 'k' &&
+        attackedSquares[i][0].firstChild.getAttribute('color') != color.toLowerCase()){
       let calculatedSquare = calculateCaptures(i);
       score += calculatedSquare / 2;
     }
@@ -1898,9 +2007,6 @@ function countPieceVal(color){
       if(piece.id == 'p')
         score += Math.floor(squareId / 8) * .1;
       let moves = calculateMovesChecks(piece.parentNode);
-      if(pinnedPieces[squareId][1] != 0){
-        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
-      }
       score += moves.length * 0.1;
     });
   }
@@ -1912,9 +2018,6 @@ function countPieceVal(color){
       if(piece.id == 'p')
         score += (8 - Math.floor(squareId / 8)) * .1;
       let moves = calculateMovesChecks(piece.parentNode);
-      if(pinnedPieces[squareId][1] != 0){
-        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
-      }
       score += moves.length * 0.1;
     });
   }
@@ -1939,17 +2042,43 @@ function calculateColorMoves(color){
   allColorPieces.forEach(piece => {
     if(piece.id.toLowerCase() != 'k'){
       let moves = calculateMovesChecks(piece.parentNode);
-      if(pinnedPieces[parseInt(piece.parentNode.getAttribute('square-id'))][1] != 0){
-        moves = moves.filter(move => pinnedPieces.map(pair => pair[0]).includes(move));
+      let position = piece.parentNode.getAttribute('square-id');
+      if(pinnedPieces[parseInt(position)][0] != 0 && pinnedPieces[parseInt(position)][1] >= 2){
+        let pinningId = 0;
+        let pinningColor = 0;
+        let pinLine = [];
+        pinnedPieces.forEach(element => {
+          if((element[1] == 1 || element[1] >= 3) && pinLine.length == 0 && element[0] != piece.parentNode){
+            pinningId = parseInt(element[0].getAttribute('square-id'));
+            pinningColor = element[0].firstChild.getAttribute('color');
+            pinningType = element[0].firstChild.id.toLowerCase();
+            console.log(pinningId, pinningColor, pinningType, 'pinning piece');
+            if(pinningType == 'r' || pinningType == 'q'){
+              pinLine = rookPins(pinningId, pinningColor);
+            }
+            if(pinLine.length == 0 || !pinLine.includes(piece.parentNode)){
+              pinLine = [];
+            }
+            if(pinLine.length == 0 && (pinningType == 'b' || pinningType == 'q')){
+              pinLine = bishopPins(pinningId, pinningColor);
+            }
+            if(pinLine.length == 0 || !pinLine.includes(piece.parentNode)){
+              pinLine = [];
+            }
+          }
+        });
+        console.log(moves, 'before', pinLine);
+        moves = moves.filter(move => pinLine.includes(move));
+        console.log(moves, 'after', pinLine);
       }
       moves.forEach(move => {
         if(checks.length > 0){
           if(checks.includes(move)){
-            allMoves.push({start: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
+            allMoves.push({start: position, destination: move.getAttribute("square-id")});
           }
         }
         else{
-          allMoves.push({start: piece.parentNode.getAttribute("square-id"), destination: move.getAttribute("square-id")});
+          allMoves.push({start: position, destination: move.getAttribute("square-id")});
         }
       });
     }
