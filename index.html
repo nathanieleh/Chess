@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chess</title>
   <link rel="stylesheet" href="css/styles.css">
+  <script src="https://kit.fontawesome.com/04dadf6c21.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div id="chessBoardContainer">
@@ -15,20 +16,20 @@
     <form id="optionsForm">
         <div class="option">
           <div>
-            <label for="PvP">Player vs Player</label>
             <input type="radio" id="PvP" name="players" value="PvP" checked>
+            <label for="PvP"><i class="fa-solid fa-user" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-user" style="color: #000000"></i></label>
           </div>
           <div>
-            <label for="PvAI">Player vs AI</label>
             <input type="radio" id="PvAI" name="players" value="PvAI">
+            <label for="PvAI"><i class="fa-solid fa-user" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-robot" style="color: #000000"></i></label>
           </div>
           <div>
-            <label for="AIvP">AI vs Player</label>
             <input type="radio" id="AIvP" name="players" value="AIvP">
+            <label for="AIvP"><i class="fa-solid fa-robot" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-user" style="color: #000000"></i></label>
           </div>
           <div>
-            <label for="AIvAI">AI vs AI</label>
             <input type="radio" id="AIvAI" name="players" value="AIvAI">
+            <label for="AIvAI"><i class="fa-solid fa-robot" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-robot" style="color: #000000"></i></label>
           </div>
         </div>
         <button type="submit">Start Game</button>
