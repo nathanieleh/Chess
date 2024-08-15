@@ -27,7 +27,18 @@ input[type='radio'] {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-label {
+label[for='text'] {
+  display: inline;
+  align-items: center;
+  padding: 0;
+  color: #000000;
+}
+
+.customFEN {
+  margin-block: .5em;
+}
+
+.selectPlayers {
   content: '';
   display: flex;
   align-items: center;
@@ -74,7 +85,7 @@ select {
   border-radius: 4px;
 }
 
-.playerChoice {
+#buttonStart {
   display: none;
 }
 
@@ -192,12 +203,16 @@ i {
 #historyMoves {
   display: none;
   background-color: rgb(215, 215, 215);
-  margin-inline: 10px;
-  padding: 20px;
+  margin-inline: .5em;
+  padding: 1em;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  margin-top: 20px;
+  margin-top: 1em;
   max-height: 400px;
+}
+
+#historyMoves > * {
+  margin-inline: .5em;
 }
 
 #information {

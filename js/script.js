@@ -66,6 +66,7 @@ buttonNext.addEventListener("click", function () {
 document.getElementById('optionsForm').addEventListener('submit', function(event) {
   event.preventDefault();
   const players = document.querySelector('input[name="players"]:checked').value;
+  const customFEN = document.querySelector('input[name="FENCode"]').value;
   switch(players){
     case 'PvP':
       playerWhite = 'Player';
@@ -85,11 +86,19 @@ document.getElementById('optionsForm').addEventListener('submit', function(event
       break;
   }
 
-  createBoard(FENCode, true);
+  if(customFEN){
+    if(!isValidFEN(customFEN)){
+      alert('Invalid FEN code');
+      return;
+    }
+    createBoard(customFEN, true);
+  }
+  else
+    createBoard(FENCode, true);
   listenOnSquares();
-  document.getElementById('turn').innerHTML = `White's Turn`;
-  document.getElementById('numMoves').innerHTML = `Move 1`;
-  document.getElementById("evaluation").innerHTML = `Evaluation: 0`;
+  document.getElementById('turn').innerHTML = `${turn}'s Turn`;
+  document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
+  document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
   gameStart.play();
   document.getElementById("chessBoard").style.display = 'flex';
   document.getElementById("information").style.display = 'flex';
@@ -257,7 +266,6 @@ function listenOnSquares() {
                 setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
               }
               document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
-              console.log(turn);
               document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
             }
           }

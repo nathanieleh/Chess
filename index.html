@@ -17,25 +17,37 @@
         <div class="option">
           <div>
             <input type="radio" id="PvP" name="players" value="PvP" checked>
-            <label for="PvP"><i class="fa-solid fa-user" style="color: #ffffff"></i><div>&nbsp vs &nbsp</div><i class="fa-solid fa-user" style="color: #000000"></i></label>
+            <label class='selectPlayers' for="PvP">
+              <i class="fa-solid fa-user" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-user" style="color: #000000"></i>
+            </label>
           </div>
           <div>
             <input type="radio" id="PvAI" name="players" value="PvAI">
-            <label for="PvAI"><i class="fa-solid fa-user" style="color: #ffffff"></i><div>&nbsp vs &nbsp</div><i class="fa-solid fa-robot" style="color: #000000"></i></label>
+            <label class='selectPlayers' for="PvAI">
+              <i class="fa-solid fa-user" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-robot" style="color: #000000"></i>
+            </label>
           </div>
           <div>
             <input type="radio" id="AIvP" name="players" value="AIvP">
-            <label for="AIvP"><i class="fa-solid fa-robot" style="color: #ffffff"></i><div>&nbsp vs &nbsp</div><i class="fa-solid fa-user" style="color: #000000"></i></label>
+            <label class='selectPlayers' for="AIvP">
+              <i class="fa-solid fa-robot" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-user" style="color: #000000"></i>
+            </label>
           </div>
           <div>
             <input type="radio" id="AIvAI" name="players" value="AIvAI">
-            <label for="AIvAI"><i class="fa-solid fa-robot" style="color: #ffffff"></i><div>&nbsp vs &nbsp</div><i class="fa-solid fa-robot" style="color: #000000"></i></label>
+            <label class='selectPlayers' for="AIvAI">
+              <i class="fa-solid fa-robot" style="color: #ffffff"></i>&nbsp vs &nbsp<i class="fa-solid fa-robot" style="color: #000000"></i>
+            </label>
           </div>
+        </div>
+        <div class="customFEN">
+          <label for="text">Use a valid <a href="https://www.chess.com/terms/fen-chess" target="_blank">FEN</a> position to start with a custom board:</label>
+          <input type="text" id="FENCode" name="FENCode">
         </div>
         <button type="submit">Start Game</button>
     </form>
   </div>
-  <button class="playerChoice" id="buttonStart">Click to Start Bot Move</button>
+  <button id="buttonStart">Click to Start Bot Move</button>
   <div id="information">
     <div id="turn">White's Turn</div>
     <div id="numMoves">Move 1</div>

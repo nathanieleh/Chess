@@ -42,6 +42,46 @@ function loadFEN(FENCode) {
 }
 
 /**
+ * Checks if the given FEN code is valid
+ * 
+ * @param {string} FENCode - The FEN code representing the desired chess position.
+ */
+function isValidFEN(FENCode){
+  let params = FENCode.split(' ');
+  if(params.length != 6)
+    return false;
+  let rows = params[0].split('/');
+  if(rows.length != 8)
+    return false;
+  for(let i = 0; i < 8; i++){
+    let row = rows[i];
+    let sum = 0;
+    for(let j = 0; j < row.length; j++){
+      if(row[j] >= '0' && row[j] <= '8'){
+        sum += parseInt(row[j]);
+      }
+      else if(!pieces.has(row[j])){
+        return false;
+      }
+      else{
+        sum++;
+      }
+    }
+    if(sum != 8)
+      return false;
+  }
+  if(params[1] != 'w' && params[1] != 'b')
+    return false;
+  if(params[2] != '-' && !params[2].match(/^[KQkq]+$/))
+    return false;
+  if(params[3] != '-' && !params[3].match(/^[a-h][1-8]$/))
+    return false;
+  if(isNaN(params[4]) || isNaN(params[5]))
+    return false;
+  return true;
+}
+
+/**
  * Updates the FEN (Forsyth–Edwards Notation) string based on the current state of the chessboard.
  * @returns {string} The updated FEN string.
  */
