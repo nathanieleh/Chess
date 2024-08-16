@@ -39,10 +39,6 @@ buttonPrevious.addEventListener("click", function () {
     historyMove % 2 == 1 ? selfMove.play() : oppMove.play();
     historyMove--;
     createBoard(gameStates[historyMove], false);
-    console.log(gameStates[historyMove]);
-    console.log(pinnedPieces, 'pinned pieces');
-    console.log(attackedSquares, 'attacked squares');
-    console.log(defendedPieces, 'defended pieces');
     document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
     document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
   }
@@ -55,9 +51,6 @@ buttonNext.addEventListener("click", function () {
     createBoard(gameStates[historyMove], false);
     if(historyMove == gameStates.length - 1)
       listenOnSquares();
-    console.log(pinnedPieces, 'pinned pieces');
-    console.log(attackedSquares, 'attacked squares');
-    console.log(defendedPieces, 'defended pieces');
     document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
     document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
   }
@@ -178,7 +171,6 @@ function listenOnSquares() {
           }
         });
         calculatePins();
-        console.log(checks, pinnedPieces);
         calculateMovesChecks(selectedSquare);
         if(checks.length != 0 && teamInCheck && selectedSquare?.firstChild?.id.toLowerCase() != 'k'){
           moves = moves.filter(move => checks.includes(move));
@@ -195,23 +187,19 @@ function listenOnSquares() {
               pinningType = element[0].firstChild.id.toLowerCase();
               if(pinningType == 'r' || pinningType == 'q'){
                 pinLine = rookPins(pinningId, pinningColor);
-                console.log(pinLine, 'rook');
               }
               if(pinLine.length == 0 || !pinLine.includes(selectedSquare)){
                 pinLine = [];
               }
               if(pinLine.length == 0 && (pinningType == 'b' || pinningType == 'q')){
                 pinLine = bishopPins(pinningId, pinningColor);
-                console.log(pinLine, 'bishop');
               }
               if(pinLine.length == 0 || !pinLine.includes(selectedSquare)){
                 pinLine = [];
               }
             }
           });
-          console.log(moves, 'before');
           moves = moves.filter(move => pinLine.includes(move));
-          console.log(moves, 'after');
         }
         colorMoves();
       }
@@ -243,10 +231,11 @@ function listenOnSquares() {
               switchTurns();
               checkmate.play();
             }
-            else if(gameOver || numHalfMoves == 100){
-              // the current position is a draw or 100 halfMoves occur, which is also a draw
+            else if(gameOver || numHalfMoves == 100 || checkForThreeFoldRepetition()){
+              // the current position is a draw or 100 halfMoves occur or position has been repeated, which are all draws
               scatter.play();
               draw = true;
+              gameOver = true;
             }
             else if(checks.length > 0){
               // just a check is made
@@ -260,7 +249,7 @@ function listenOnSquares() {
               // only a piece move occurred
               color == 'white' ? selfMove.play() : oppMove.play();
             }
-            if(!gameOver){
+            if(!gameOver && !draw){
               if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black"){
                 // if the player to move now is a bot, make the bot move
                 setTimeout(function() {document.dispatchEvent(new Event("playerMoved"))}, moveDelay);
@@ -308,13 +297,24 @@ document.addEventListener("playerMoved", function () {
   // checks to make sure we are not looking back at a previous position
   if(historyMove == gameStates.length - 1){
     let botMove = makeBotMove(turn);
-    console.log(botMove, 'chosen move');
+    // console.log(botMove, 'chosen move');
     let botStart = document.querySelector(`[square-id="${botMove.start}"]`);
     let botDestination = document.querySelector(`[square-id="${botMove.destination}"]`);
     botStart.click();
     botDestination.click();
   }
 });
+
+function checkForThreeFoldRepetition(){
+  let count = 0;
+  let currPosition = updateFEN().split(' ');
+  for(let i = 0; i < gameStates.length; i++){
+    let iteratedPosition = gameStates[i].split(' ');
+    if(iteratedPosition[0] == currPosition[0] && iteratedPosition[1] == currPosition[1] && iteratedPosition[2] == currPosition[2])
+      count++;
+  }
+  return count >= 3;
+}
 
 /**
  * Makes a move on the chessboard and ensures rules like enpassant, promotion, and castling are maintained.
@@ -1795,11 +1795,11 @@ function makeBotMove(botColor) {
     switchTurns();
     makeMove(start, destination);
     possiblePosition = updateFEN();
-    console.log(move, possiblePosition, turn);
+    // console.log(move, possiblePosition, turn);
 
     // determines the best score for the opponent given the new position
     let oppScore = searchMoves(1, -Infinity, Infinity);
-    console.log('bestOppResponse', oppScore);
+    // console.log('bestOppResponse', oppScore);
 
     // undoes the previous move made
     gameStates.pop();
@@ -1812,8 +1812,8 @@ function makeBotMove(botColor) {
       bestMove = move;
     }
   }
-  console.log(bestMove, gameStates);
-  console.log(calculatedMoves, 'number of positions calculated');
+  // console.log(bestMove, gameStates);
+  // console.log(calculatedMoves, 'number of positions calculated');
   calculatedMoves = 0;
   return bestMove;
 }
@@ -1845,7 +1845,7 @@ function searchMoves(depth, alpha, beta){
   for(let i = 0; i < allMoves.length; i++){
     // chooses a new move to start a new line of calculation
     let move = allMoves[i];
-    console.log(move, 'potential move');
+    // console.log(move, 'potential move');
     let start = document.querySelector(`[square-id="${move.start}"]`);
     let destination = document.querySelector(`[square-id="${move.destination}"]`);
     switchTurns();
@@ -1856,7 +1856,7 @@ function searchMoves(depth, alpha, beta){
 
     // search through the new position
     score = -searchMoves(depth - 1 + depthExtension, -beta, -alpha);
-    console.log(score, 'potential position score');
+    // console.log(score, 'potential position score');
 
     // undo the previous move made
     gameStates.pop();
@@ -1865,7 +1865,7 @@ function searchMoves(depth, alpha, beta){
 
     if(score >= beta){
       // this score is too bad for the player so we cut this calculation short
-      console.log(beta, "snip");
+      // console.log(beta, "snip");
       return beta;
     }
     if(score > alpha){
@@ -1874,7 +1874,7 @@ function searchMoves(depth, alpha, beta){
       alpha = score;
     }
   }
-  console.log(bestMove, 'bestMove for opponent');
+  // console.log(bestMove, 'bestMove for opponent');
   return alpha;
 }
 
@@ -1891,12 +1891,12 @@ function calculateDepthExtension(){
   //! find a way to implement this without an infinite loop, maybe modify the original calling method instead
   // we are reaching some sort of endgame so look more into the future
   // if(allPieces.length < 10){
-  //   console.log('endgame');
+    console.log('endgame');
   //   extension++;
   // }
   // there is a check so it is valuable to know where this ends up
   if(checks.length > 0){
-    console.log('satisfy check')
+    // console.log('satisfy check')
     extension++;
   }
   return extension;
@@ -2060,7 +2060,6 @@ function calculateColorMoves(color){
             pinningId = parseInt(element[0].getAttribute('square-id'));
             pinningColor = element[0].firstChild.getAttribute('color');
             pinningType = element[0].firstChild.id.toLowerCase();
-            console.log(pinningId, pinningColor, pinningType, 'pinning piece');
             if(pinningType == 'r' || pinningType == 'q'){
               pinLine = rookPins(pinningId, pinningColor);
             }
@@ -2075,9 +2074,7 @@ function calculateColorMoves(color){
             }
           }
         });
-        console.log(moves, 'before', pinLine);
         moves = moves.filter(move => pinLine.includes(move));
-        console.log(moves, 'after', pinLine);
       }
       moves.forEach(move => {
         if(checks.length > 0){
