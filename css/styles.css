@@ -20,7 +20,8 @@ input[type='radio'] {
 }
 
 .options-menu {
-  background-color: rgb(215, 215, 215);
+  background-color: rgb(235, 235, 235);
+  margin-top: 10px;
   margin-inline: 10px;
   padding: 20px;
   border-radius: 8px;
@@ -90,18 +91,21 @@ select {
 }
 
 #chessBoardContainer {
-  display: flex;
+  display: none;
   justify-content: center;
+  width: fit-content;
+  margin-inline: auto;
   margin-top: 10px;
+  border-radius: 3px;
+  border: 10px solid rgb(139, 115, 85);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 #chessBoard {
   display: none;
   flex-wrap: wrap;
   justify-content: center;
-  border: 1px solid #000000;
-  border-radius: 2px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  border: 2.5px solid #000000;
 }
 
 i {
@@ -191,18 +195,31 @@ i {
   }
 }
 
+.lastMovePiece {
+  height: inherit;
+  width: auto;
+  aspect-ratio: 1;
+  margin: 0;
+  margin-bottom: -4px;
+}
+
+#lastMove {
+  height: 18.4px;
+  position: relative;
+}
+
 
 .white {
-  background-color: rgb(231, 231, 231);
+  background-color: rgb(235, 235, 235);
 }
 
 .lightgreen {
-  background-color: rgb(106, 189, 106);
+  background-color: rgb(139, 115, 85);
 }
 
 #historyMoves {
   display: none;
-  background-color: rgb(215, 215, 215);
+  background-color: rgb(235, 235, 235);
   margin-inline: .5em;
   padding: 1em;
   border-radius: 8px;
@@ -218,12 +235,12 @@ i {
 #information {
   display: none;
   flex-direction: column;
-  background-color: rgb(215, 215, 215);
+  background-color: rgb(235, 235, 235);
   margin-inline: 10px;
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  margin-top: 20px;
+  margin-top: 10px;
   max-height: 400px;
 }
 

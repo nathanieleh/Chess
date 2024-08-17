@@ -35,7 +35,11 @@ buttonStart.addEventListener("click", function () {
 });
 buttonPrevious.addEventListener("click", function () {
   if(historyMove > 0){
-    switchTurns();
+    if (turn === 'White') {
+      turn = 'Black';
+    } else {
+      turn = 'White';
+    }
     historyMove % 2 == 1 ? selfMove.play() : oppMove.play();
     historyMove--;
     createBoard(gameStates[historyMove], false);
@@ -45,7 +49,11 @@ buttonPrevious.addEventListener("click", function () {
 });
 buttonNext.addEventListener("click", function () {
   if(historyMove < gameStates.length - 1){
-    switchTurns();
+    if (turn === 'White') {
+      turn = 'Black';
+    } else {
+      turn = 'White';
+    }
     historyMove % 2 == 1 ? selfMove.play() : oppMove.play();
     historyMove++;
     createBoard(gameStates[historyMove], false);
@@ -93,6 +101,7 @@ document.getElementById('optionsForm').addEventListener('submit', function(event
   document.getElementById('numMoves').innerHTML = `Move ${parseInt(numMoves / 2)}`;
   document.getElementById("evaluation").innerHTML = `Evaluation: ${turn == 'White' ? evaluateBoard(turn).toFixed(2) : -evaluateBoard(turn).toFixed(2)}`;
   gameStart.play();
+  document.getElementById("chessBoardContainer").style.display = 'flex';
   document.getElementById("chessBoard").style.display = 'flex';
   document.getElementById("information").style.display = 'flex';
   document.getElementById("historyMoves").style.display = 'flex';
@@ -155,7 +164,7 @@ function listenOnSquares() {
     square.addEventListener("click", function (e) {
       let destination = e.target;
       let teamInCheck = false;
-      let pieces = allPieces.length;
+      let numPieces = allPieces.length;
       // no piece has been selected yet, so select this one and show possible moves
       if(!selectedSquare && !gameOver){
         selectedSquare = e.target;
@@ -163,7 +172,7 @@ function listenOnSquares() {
           selectedSquare = '';
           return;
         }
-        selectedSquare.style.backgroundColor='deepskyblue';
+        selectedSquare.style.backgroundColor='rgb(204, 153, 102)';
         calculateChecks();
         checks.forEach(position => {
           if(position == document.getElementById(selectedSquare.firstChild.getAttribute('color') == 'white' ? 'K' : 'k').parentNode){
@@ -217,17 +226,46 @@ function listenOnSquares() {
           // if the selected piece the player wants to move is for the color to move, handle movement
           if(color == turn.toLowerCase()){
             // updates halfMoves to 0 if pawn is pushed or a capture happens
-            if(selectedSquare.firstChild.id.toLowerCase() == 'p' || destination.firstChild)
+            let piece = selectedSquare.firstChild.id;
+            if(piece.toLowerCase() == 'p' || destination.firstChild)
               numHalfMoves = 0;
+            
+            // updates the last move made in the game
+            let lastMove = document.getElementById('lastMove');
+            let startCol = String.fromCharCode('a'.charCodeAt(0) + (parseInt(selectedSquare.getAttribute('square-id')) % 8));
+            let endCol = String.fromCharCode('a'.charCodeAt(0) + (parseInt(destination.getAttribute('square-id')) % 8));
+            let endRow = (8 - Math.floor(parseInt(destination.getAttribute('square-id')) / 8)).toString();
+            let parser = new DOMParser();
+            let doc = parser.parseFromString(pieces.get(piece), 'text/html');
+            let div = doc.querySelector('div');
+            let svg = doc.querySelector('svg');
+            svg.classList.add('lastMovePiece');
+            let pieceImage = div.innerHTML;
+            if(piece.toLowerCase() == 'p'){
+              if(destination.firstChild){
+                lastMove.innerHTML = `Last Move: ${pieceImage}${startCol}x${endCol + endRow}`;
+              }
+              else{
+                lastMove.innerHTML = `Last Move: ${pieceImage}${endCol + endRow}`;
+              }
+            }
+            else if(piece.toLowerCase() == 'k' && Math.abs(parseInt(selectedSquare.getAttribute('square-id')) - parseInt(destination.getAttribute('square-id'))) == 2){
+              lastMove.innerHTML = `Last Move: ${pieceImage}0-0${endCol == 'c' ? '-0' : ''}`;
+            }
+            else{
+              lastMove.innerHTML = `Last Move: ${pieceImage}${piece}${destination.firstChild ? 'x' : ''}${endCol + endRow}`;
+            }
 
             // handles the move and updates checks array
             switchTurns();
             makeMove(selectedSquare, destination);
             calculateChecks();
 
+
             gameOver = checkForCheckMateOrDraw();
             if(checks.length > 0 && gameOver){
               // the current position is checkmate
+              lastMove.innerHTML += '#';
               switchTurns();
               checkmate.play();
             }
@@ -239,9 +277,10 @@ function listenOnSquares() {
             }
             else if(checks.length > 0){
               // just a check is made
+              lastMove.innerHTML += '+';
               check.play();
             }
-            else if(pieces != allPieces.length){
+            else if(numPieces != allPieces.length){
               // a capture occurred
               capture.play();
             }
@@ -2101,11 +2140,11 @@ function calculateColorMoves(color){
 }
 
 /**
- * Changes the background color of each square in the moves array to crimson.
+ * Changes the background color of each square in the moves array.
  */
 function colorMoves() {
   moves.forEach(square => {
-    square.style.backgroundColor = 'crimson';
+    square.style.backgroundColor = 'rgb(204, 85, 0)';
   });
 }
 
