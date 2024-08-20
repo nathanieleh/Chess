@@ -1,6 +1,6 @@
 // used for debugging purposes if I want to start the game with a custom position
-let FENCode = startFEN;
-// let FENCode = testFEN;
+// let FENCode = startFEN;
+let FENCode = testFEN;
 
 // keeps track of all positions run through in the current game so we can look back to previous positions of the same game
 let gameStates = [];
@@ -172,7 +172,11 @@ function listenOnSquares() {
           selectedSquare = '';
           return;
         }
+
+        // colors the selected square to visually let the player know the selection was made
         selectedSquare.style.backgroundColor='rgb(204, 153, 102)';
+
+        // filters the moves depending on if the team is currently in check
         calculateChecks();
         checks.forEach(position => {
           if(position == document.getElementById(selectedSquare.firstChild.getAttribute('color') == 'white' ? 'K' : 'k').parentNode){
@@ -184,6 +188,8 @@ function listenOnSquares() {
         if(checks.length != 0 && teamInCheck && selectedSquare?.firstChild?.id.toLowerCase() != 'k'){
           moves = moves.filter(move => checks.includes(move));
         }
+
+        // filters the moves if the piece is pinned
         let squareId = parseInt(selectedSquare.getAttribute('square-id'));
         if(pinnedPieces[squareId][0] != 0 && pinnedPieces[squareId][1] >= 2){
           let pinningId = 0;
@@ -210,6 +216,8 @@ function listenOnSquares() {
           });
           moves = moves.filter(move => pinLine.includes(move));
         }
+
+        // now that we have the correct moves to display, color the moves
         colorMoves();
       }
 
@@ -1836,8 +1844,17 @@ function makeBotMove(botColor) {
     possiblePosition = updateFEN();
     // console.log(move, possiblePosition, turn);
 
+    // resolve the initial depth of the search given the current position
+    let depth = 1;
+    allPieces = document.querySelectorAll(".piece");
+    allQueens = document.querySelectorAll(".q, .Q");
+    if((allPieces.length <= 10 && allQueens.length == 0) || (allPieces.length <= 6 && allQueens.length <= 1) || allPieces.length <= 4){
+      console.log('endgame');
+      depth++;
+    }
+
     // determines the best score for the opponent given the new position
-    let oppScore = searchMoves(1, -Infinity, Infinity);
+    let oppScore = searchMoves(depth, -Infinity, Infinity);
     // console.log('bestOppResponse', oppScore);
 
     // undoes the previous move made
@@ -1870,7 +1887,7 @@ function searchMoves(depth, alpha, beta){
   let allMoves = [];
   let score = 0;
   let bestMove = 0;
-  if(depth == 0){
+  if(depth == 0 || checkForThreeFoldRepetition() || checkForCheckMateOrDraw()){
     // the line is complete so return the final position
     calculatedMoves++;
     return evaluateBoard(turn);
@@ -1927,15 +1944,8 @@ function calculateDepthExtension(){
   allPieces = document.querySelectorAll(".piece");
   calculateChecks();
 
-  //! find a way to implement this without an infinite loop, maybe modify the original calling method instead
-  // we are reaching some sort of endgame so look more into the future
-  // if(allPieces.length < 10){
-    console.log('endgame');
-  //   extension++;
-  // }
   // there is a check so it is valuable to know where this ends up
   if(checks.length > 0){
-    // console.log('satisfy check')
     extension++;
   }
   return extension;
@@ -1960,6 +1970,19 @@ function evaluateBoard(color){
         attackedSquares[i][0].firstChild.getAttribute('color') != color.toLowerCase()){
       let calculatedSquare = calculateCaptures(i);
       score += calculatedSquare / 2;
+    }
+  }
+  // check if the king is in check to determine if the evaluation should be -Infinity or 0
+  if(checkForCheckMateOrDraw() || checkForThreeFoldRepetition()){
+    let kingPieceId = color.toLowerCase() == 'white' ? 'K' : 'k';
+    let kingPiece = document.querySelector(`#${kingPieceId}`);
+    let kingSquare = kingPiece.parentNode;
+    let kingSquareId = parseInt(kingSquare.getAttribute('square-id'));
+    if(attackedSquares[kingSquareId][0] != 0){
+      score = -Infinity;
+    }
+    else {
+      score = 0;
     }
   }
   return score * playerPerspective;
@@ -2038,6 +2061,7 @@ function pieceScore(piece){
   }
 }
 
+
 /**
  * Calculates the total value of pieces for a given color.
  * 
@@ -2046,13 +2070,34 @@ function pieceScore(piece){
  */
 function countPieceVal(color){
   let score = 0;
+  allPieces = document.querySelectorAll(".piece");
   if(color.toLowerCase() == 'black'){
     allBlack = document.querySelectorAll("div[color='black']");
     allBlack.forEach(piece => {
       let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
+      let row = Math.floor(squareId / 8);
+      let col = squareId % 8;
       score += pieceScore(piece);
-      if(piece.id == 'p')
-        score += Math.floor(squareId / 8) * .1;
+      if(piece.id == 'p'){
+        if(allPieces.length < 10){
+          score += row * .5;
+        }
+        if(allPieces.length >= 10){
+          score += row * .2;
+        }
+      }
+      if(piece.id == 'k'){
+        // incentivize the king to move to the center and closer to the other king
+        if(allPieces.length < 10){
+          score -= Math.abs(col - 3.5) * .2;
+          score -= Math.abs(row - 3.5) * .2;
+        }
+        // incentivize the king to stay on the edge protected
+        if(allPieces.length >= 10){
+          score += col * .2;
+          score -= row * .2;
+        }
+      }
       let moves = calculateMovesChecks(piece.parentNode);
       score += moves.length * 0.1;
     });
@@ -2061,9 +2106,29 @@ function countPieceVal(color){
     allWhite = document.querySelectorAll("div[color='white']");
     allWhite.forEach(piece => {
       let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
+      let row = Math.floor(squareId / 8);
+      let col = squareId % 8;
       score += pieceScore(piece);
-      if(piece.id == 'p')
-        score += (8 - Math.floor(squareId / 8)) * .1;
+      if(piece.id == 'P'){
+        if(allPieces.length < 10){
+          score += (8 - row) * .5;
+        }
+        if(allPieces.length >= 10){
+          score += (8 - row) * .2;
+        }
+      }
+      if(piece.id == 'K'){
+        // incentivize the king to move to the center and closer to the other king
+        if(allPieces.length < 10){
+          score -= Math.abs(col - 3.5) * .2;
+          score -= Math.abs(row - 3.5) * .2;
+        }
+        // incentivize the king to stay on the edge protected
+        if(allPieces.length >= 10){
+          score += col * .2;
+          score -= (7 - row) * .2;
+        }
+      }
       let moves = calculateMovesChecks(piece.parentNode);
       score += moves.length * 0.1;
     });
