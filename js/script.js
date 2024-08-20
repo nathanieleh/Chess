@@ -1848,8 +1848,7 @@ function makeBotMove(botColor) {
     let depth = 1;
     allPieces = document.querySelectorAll(".piece");
     allQueens = document.querySelectorAll(".q, .Q");
-    if((allPieces.length <= 10 && allQueens.length == 0) || (allPieces.length <= 6 && allQueens.length <= 1) || allPieces.length <= 4){
-      console.log('endgame');
+    if((allPieces.length <= 8 && allQueens.length == 0) || allPieces.length <= 4){
       depth++;
     }
 
@@ -1979,7 +1978,7 @@ function evaluateBoard(color){
     let kingSquare = kingPiece.parentNode;
     let kingSquareId = parseInt(kingSquare.getAttribute('square-id'));
     if(attackedSquares[kingSquareId][0] != 0){
-      score = -Infinity;
+      score = Infinity;
     }
     else {
       score = 0;
@@ -2089,13 +2088,27 @@ function countPieceVal(color){
       if(piece.id == 'k'){
         // incentivize the king to move to the center and closer to the other king
         if(allPieces.length < 10){
-          score -= Math.abs(col - 3.5) * .2;
-          score -= Math.abs(row - 3.5) * .2;
+          score -= Math.abs(col - 3.5) * .1;
+          score -= Math.abs(row - 3.5) * .1;
+          let whiteKing = document.querySelector('#K').parentNode;
+          let whiteRow = Math.floor(parseInt(whiteKing.getAttribute('square-id') / 8));
+          let whiteCol = parseInt(whiteKing.getAttribute('square-id') % 8);
+          score -= Math.abs(whiteRow - row) + Math.abs(whiteCol - col);
+          // restrict the number of moves the other king can make
+          let whiteMoves = calculateMovesChecks(whiteKing);
+          score -= whiteMoves.length * 0.1;
         }
         // incentivize the king to stay on the edge protected
         if(allPieces.length >= 10){
           score += col * .2;
           score -= row * .2;
+        }
+      }
+      // keep the queen from leaving her square too early
+      if(piece.id == 'q'){
+        if(allPieces.length >= 10){
+          score -= Math.abs(col - 3.5) * .1;
+          score -= row * .1;
         }
       }
       let moves = calculateMovesChecks(piece.parentNode);
@@ -2120,13 +2133,28 @@ function countPieceVal(color){
       if(piece.id == 'K'){
         // incentivize the king to move to the center and closer to the other king
         if(allPieces.length < 10){
-          score -= Math.abs(col - 3.5) * .2;
-          score -= Math.abs(row - 3.5) * .2;
+          score -= Math.abs(col - 3.5) * .1;
+          score -= Math.abs(row - 3.5) * .1;
+          // find distance between kings
+          let blackKing = document.querySelector('#k').parentNode;
+          let blackRow = Math.floor(parseInt(blackKing.getAttribute('square-id') / 8));
+          let blackCol = parseInt(blackKing.getAttribute('square-id') % 8);
+          score -= Math.abs(blackRow - row) + Math.abs(blackCol - col);
+          // restrict the number of moves the other king can make
+          let blackMoves = calculateMovesChecks(blackKing);
+          score -= blackMoves.length * 0.1;
         }
         // incentivize the king to stay on the edge protected
         if(allPieces.length >= 10){
           score += col * .2;
-          score -= (7 - row) * .2;
+          score += row * .2;
+        }
+      }
+      // keep the queen from leaving her square too early
+      if(piece.id == 'Q'){
+        if(allPieces.length >= 10){
+          score -= Math.abs(col - 3.5) * .1;
+          score += row * .1;
         }
       }
       let moves = calculateMovesChecks(piece.parentNode);
