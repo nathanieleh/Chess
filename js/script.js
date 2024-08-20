@@ -186,6 +186,18 @@ function listenOnSquares() {
         calculatePins();
         calculateMovesChecks(selectedSquare);
         if(checks.length != 0 && teamInCheck && selectedSquare?.firstChild?.id.toLowerCase() != 'k'){
+          // add the square that includes enpassant in checks if that is included
+          let enPassantPiece = document.querySelector('[enpassant="true"]');
+          console.log(enPassantPiece, checks);
+          if(enPassantPiece && checks.includes(enPassantPiece.parentNode)){
+            console.log('pushing piece', checks);
+            if(enPassantPiece.id == 'p')
+              checks.push(document.querySelector(`[square-id="${parseInt(enPassantPiece.parentNode.getAttribute('square-id')) - 8}"]`));
+            else
+              checks.push(document.querySelector(`[square-id="${parseInt(enPassantPiece.parentNode.getAttribute('square-id')) + 8}"]`));
+            console.log('pushed piece', checks);
+          }
+          // filters the moves if the king is in check and the player must move the king
           moves = moves.filter(move => checks.includes(move));
         }
 
