@@ -244,6 +244,25 @@ i {
   max-height: 400px;
 }
 
+#evaluationBarContainer {
+  display: none;
+  flex-direction: column;
+  background-color: rgb(0, 0, 0);
+  margin-inline: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin-top: 10px;
+}
+
+#evaluationBar {
+  display: none;
+  background-color: rgb(255, 255, 255);
+  height: 40px;
+  max-width: 100%;
+  min-width: 0%;
+  width: 50%;
+  transition: width 0.3s;
+}
+
 .piece {
   pointer-events: none;
 }
