@@ -2119,7 +2119,7 @@ function pieceScore(piece){
       return 9;
     case 'k':
     case 'K':
-      return 10;
+      return 0.5;
     default:
       return 0;
   }
