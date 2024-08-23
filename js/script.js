@@ -20,7 +20,7 @@ let playerWhite = "Player";
 let playerBlack = "Player";
 
 // delay between bot moves if site is running a bot game 
-let moveDelay = 100;
+let moveDelay = 300;
 
 // custom event so bot knows when to start its calculations for the current position
 const playerMoved = new CustomEvent("playerMoved");
@@ -29,6 +29,7 @@ const playerMoved = new CustomEvent("playerMoved");
 const buttonStart = document.getElementById('buttonStart');
 const buttonPrevious = document.getElementById('previous');
 const buttonNext = document.getElementById('next');
+const buttonCopy = document.getElementById('copyCurrentPosition');
 buttonStart.addEventListener("click", function () {
   if(playerWhite == 'Bot' && turn == "White" || playerBlack == 'Bot' && turn == "Black")
     document.dispatchEvent(new Event("playerMoved"));
@@ -67,6 +68,14 @@ buttonNext.addEventListener("click", function () {
     updateEvalBar(evaluation);
   }
 });
+buttonCopy.addEventListener("click", function () {
+  const copyText = updateFEN();
+  navigator.clipboard.writeText(copyText).then(function() {
+    alert('Copied FEN code to clipboard');
+  }, function(err) {
+    alert('Failed to copy FEN code to clipboard');
+  });
+});
 
 document.getElementById('optionsForm').addEventListener('submit', function(event) {
   event.preventDefault();
@@ -88,6 +97,7 @@ document.getElementById('optionsForm').addEventListener('submit', function(event
     case 'AIvAI':
       playerWhite = 'Bot';
       playerBlack = 'Bot';
+      buttonStart.style.display = 'flex';
       break;
   }
 
@@ -112,7 +122,7 @@ document.getElementById('optionsForm').addEventListener('submit', function(event
   document.getElementById("evaluationBarContainer").style.display = 'flex';
   document.getElementById("chessBoard").style.display = 'flex';
   document.getElementById("information").style.display = 'flex';
-  document.getElementById("historyMoves").style.display = 'flex';
+  document.getElementById("controlMoves").style.display = 'flex';
   document.querySelector('.options-menu').style.display = 'none';
   document.getElementById('buttonStart').click();
 });
@@ -2025,18 +2035,20 @@ function evaluateBoard(color){
   }
 
   score *= playerPerspective;
-  // allPieces = document.querySelectorAll('.piece');
-  // // if the current player is winning, add points for moving the kings closer
-  // if(allPieces.length <= 10){
-  //   let whiteKing = document.querySelector('#K').parentNode;
-  //   let blackKing = document.querySelector('#k').parentNode;
-  //   let whiteRow = Math.floor(whiteKing.getAttribute('square-id') / 8);
-  //   let whiteCol = whiteKing.getAttribute('square-id') % 8;
-  //   let blackRow = Math.floor(blackKing.getAttribute('square-id') / 8);
-  //   let blackCol = blackKing.getAttribute('square-id') % 8;
-  //   if(score > 0)
-  //     score += 14 - (Math.abs(whiteRow - blackRow) + Math.abs(whiteCol - blackCol));
-  // }
+  allPieces = document.querySelectorAll('.piece');
+  // if the current player is winning, add points for moving the kings closer
+  if(allPieces.length <= 10){
+    let whiteKing = document.querySelector('#K').parentNode;
+    let blackKing = document.querySelector('#k').parentNode;
+    let whiteRow = Math.floor(whiteKing.getAttribute('square-id') / 8);
+    let whiteCol = whiteKing.getAttribute('square-id') % 8;
+    let blackRow = Math.floor(blackKing.getAttribute('square-id') / 8);
+    let blackCol = blackKing.getAttribute('square-id') % 8;
+    if(score > 0)
+      score += 14 - (Math.abs(whiteRow - blackRow) + Math.abs(whiteCol - blackCol));
+    else
+      score -= 14 - (Math.abs(whiteRow - blackRow) + Math.abs(whiteCol - blackCol));
+  }
   return score;
 }
 
@@ -2124,7 +2136,6 @@ function countPieceVal(color){
   let score = 0;
   allPieces = document.querySelectorAll(".piece");
   if(color.toLowerCase() == 'black'){
-    let whiteKing = document.querySelector('#K').parentNode;
     allBlack = document.querySelectorAll("div[color='black']");
     allBlack.forEach(piece => {
       let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
@@ -2132,11 +2143,14 @@ function countPieceVal(color){
       let col = squareId % 8;
       score += pieceScore(piece);
       if(piece.id == 'p'){
-        if(allPieces.length < 10){
+        if(allPieces.length < 10 && row != 7){
           score += row * .5;
         }
-        if(allPieces.length >= 10){
+        if(allPieces.length >= 10 && row != 7){
           score += row * .2;
+        }
+        if(row == 7){
+          score += 8;
         }
       }
       if(piece.id == 'k'){
@@ -2163,7 +2177,6 @@ function countPieceVal(color){
     });
   }
   else {
-    let blackKing = document.querySelector('#k').parentNode;
     allWhite = document.querySelectorAll("div[color='white']");
     allWhite.forEach(piece => {
       let squareId = parseInt(piece.parentNode.getAttribute('square-id'));
@@ -2171,15 +2184,18 @@ function countPieceVal(color){
       let col = squareId % 8;
       score += pieceScore(piece);
       if(piece.id == 'P'){
-        if(allPieces.length < 10){
+        if(allPieces.length < 10 && row != 0){
           score += (7 - row) * .5;
         }
-        if(allPieces.length >= 10){
+        if(allPieces.length >= 10 && row != 0){
           score += (7 - row) * .2;
+        }
+        if(row == 7){
+          score += 8;
         }
       }
       if(piece.id == 'K'){
-        // incentivize the king to move to the center and closer to the other king
+        // incentivize the king to move to the center
         if(allPieces.length < 10){
           score -= Math.abs(col - 3.5) * .1;
           score -= Math.abs(row - 3.5) * .1;

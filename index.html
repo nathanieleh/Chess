@@ -47,7 +47,6 @@
         <button type="submit">Start Game</button>
     </form>
   </div>
-  <button id="buttonStart">Click to Start Bot Move</button>
   <div id="information">
     <div id="turn">White's Turn</div>
     <div id="numMoves">Move 1</div>
@@ -57,9 +56,15 @@
       <div id="evaluationBar"></div>
     </div>
   </div>
-  <div id="historyMoves">
+  <div id="controlMoves">
+    <div>
+      <button id="buttonStart">Start Bot</button>
+    </div>
     <button id="previous">Previous</button>
     <button id="next">Next</button>
+    <div id="copyCurrentPosition">
+      <button id="copyFEN">Copy FEN</button>
+    </div>
   </div>
   <script src="js/pieces.js"></script>
   <script src="js/board.js"></script>

@@ -217,7 +217,7 @@ i {
   background-color: rgb(139, 115, 85);
 }
 
-#historyMoves {
+#controlMoves {
   display: none;
   background-color: rgb(235, 235, 235);
   margin-inline: .5em;
@@ -228,7 +228,7 @@ i {
   max-height: 400px;
 }
 
-#historyMoves > * {
+#controlMoves > * {
   margin-inline: .5em;
 }
 
